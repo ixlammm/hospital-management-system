@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Patient {
+  id         String  @id @default(uuid())
+  name       String
+  age        Int
+  gender     String
+  contact    String
+  email      String?  @unique
+  address    String?
+  city       String?
+  state      String?
+  zipCode    String?
+  insurance  String?
+  status     String
+  lastVisit  DateTime
+  doctor     String
+  notes      String?
+  appointments Appointment[]
+  room      Room?
+}
+
+model Staff {
+  id             String  @id @default(uuid())
+  name           String
+  role           String
+  department     String
+  status         String
+  contact        String
+  email          String  @unique
+  joined         DateTime
+  gender         String?
+  address        String?
+  qualifications String?
+  specialization String?
+  experience     String?
+  notes          String?
+  appointments   Appointment[]
+}
+
+model Appointment {
+  id          String  @id @default(uuid())
+  patientId   String
+  doctorId    String
+  department  String
+  date        DateTime
+  time        String
+  status      String
+  type        String
+  duration    String?
+  notes       String?
+
+  patient     Patient @relation(fields: [patientId], references: [id])
+  staff       Staff   @relation(fields: [doctorId], references: [id])
+}
+
+model Room {
+  name      String  @id
+  type      String
+  floor     String
+  beds      Int
+  status    String
+  patientId String?  @unique
+  equipment String?
+  notes     String?
+
+  patient   Patient? @relation(fields: [patientId], references: [id])
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  pswdHash      String
+  email         String          @unique
+  accounts      Account[]
+  sessions      Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  }
+
+  model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
