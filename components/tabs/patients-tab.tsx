@@ -53,14 +53,10 @@ export function PatientsTab() {
     firstName: "",
     lastName: "",
     dob: "",
-    gender: "female",
+    gender: "male",
     phone: "",
     email: "",
     address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    insurance: "",
     notes: "",
   })
 
@@ -95,17 +91,12 @@ export function PatientsTab() {
       const patient = {
         name: `${newPatient.firstName} ${newPatient.lastName}`,
         age: age,
-        gender: newPatient.gender.charAt(0).toUpperCase() + newPatient.gender.slice(1),
+        gender: newPatient.gender as "male" | "female",
         contact: newPatient.phone,
         email: newPatient.email,
         address: newPatient.address,
-        city: newPatient.city,
-        state: newPatient.state,
-        zipCode: newPatient.zipCode,
-        insurance: newPatient.insurance,
         status: "Active",
         lastVisit: new Date(),
-        doctor: "Unassigned",
         notes: newPatient.notes,
       }
 
@@ -127,10 +118,6 @@ export function PatientsTab() {
         phone: "",
         email: "",
         address: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        insurance: "",
         notes: "",
       })
     } catch (error) {
@@ -295,34 +282,6 @@ export function PatientsTab() {
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">{t("patients.city")}</Label>
-                    <Input id="city" placeholder="City" value={newPatient.city} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">{t("patients.state")}</Label>
-                    <Input id="state" placeholder="State" value={newPatient.state} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label htmlFor="zipCode">{t("patients.zipCode")}</Label>
-                    <Input
-                      id="zipCode"
-                      placeholder="Zip code"
-                      value={newPatient.zipCode}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="insurance">{t("patients.insurance")}</Label>
-                  <Input
-                    id="insurance"
-                    placeholder="Insurance provider"
-                    value={newPatient.insurance}
-                    onChange={handleInputChange}
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">{t("patients.notes")}</Label>
                   <Textarea
@@ -389,7 +348,6 @@ export function PatientsTab() {
                 <TableHead className="table-header hidden lg:table-cell">{t("patients.contact")}</TableHead>
                 <TableHead className="table-header">{t("patients.status")}</TableHead>
                 <TableHead className="table-header hidden lg:table-cell">{t("patients.lastVisit")}</TableHead>
-                <TableHead className="table-header hidden md:table-cell">{t("patients.doctor")}</TableHead>
                 <TableHead className="table-header text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -419,7 +377,6 @@ export function PatientsTab() {
                         <Badge variant={patient.status === "Active" ? "default" : "outline"}>{patient.status}</Badge>
                       </TableCell>
                       <TableCell className="table-cell hidden lg:table-cell">{patient.lastVisit.toDateString()}</TableCell>
-                      <TableCell className="table-cell hidden md:table-cell">{patient.doctor}</TableCell>
                       <TableCell className="table-cell text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

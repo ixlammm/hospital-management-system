@@ -2,8 +2,9 @@
 
 import type React from "react"
 
-import { Bell, Search, Clock, Space } from "lucide-react"
+import { Bell, Search, Clock, Space, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
+import Moment from "react-moment"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,9 +18,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useI18n } from "@/lib/i18n"
-import { signOut } from "@/auth"
-import { logout } from "@/actions/auth-actions"
 import { SidebarTrigger } from "./ui/sidebar"
+import { useAuth } from "@/hooks/use-auth"
+import { useSession } from "next-auth/react"
 
 interface DashboardHeaderProps {
   activeTab: string
@@ -31,20 +32,12 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ activeTab, navigationItems }: DashboardHeaderProps) {
-  const [currentTime, setCurrentTime] = useState(new Date())
   const activeItem = navigationItems.find((item) => item.id === activeTab)
   const { t } = useI18n()
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000) // Update every minute
+  const session = useSession()
 
-    return () => clearInterval(timer)
-  }, [])
-
-  const formattedTime = currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  const formattedDate = currentTime.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })
+  const auth = useAuth()
 
   return (
     <header className="sticky top-0 z-1 border-b bg-card">
@@ -54,8 +47,7 @@ export function DashboardHeader({ activeTab, navigationItems }: DashboardHeaderP
         <div className="ml-auto flex items-center gap-4">
           <div className="hidden md:flex items-center gap-2 text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span className="text-sm">{formattedTime}</span>
-            <span className="text-sm hidden lg:inline">• {formattedDate}</span>
+            <Moment local format={"hh:mm A • dddd, MMMM d"}/>
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -81,13 +73,16 @@ export function DashboardHeader({ activeTab, navigationItems }: DashboardHeaderP
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+              <DropdownMenuLabel>{session.status == "authenticated" && session.data.user?.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profil</DropdownMenuItem>
               <DropdownMenuItem>Paramètres</DropdownMenuItem>
               <DropdownMenuItem>Aide</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={async () => await logout()}>Déconnexion</DropdownMenuItem>
+              <DropdownMenuItem onClick={auth.logout.run}>
+                {auth.logout.loading && <Loader2 className="animate-spin"/>}
+                Déconnexion
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

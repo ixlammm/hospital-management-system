@@ -3,13 +3,34 @@
 import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
-import { Patient } from "./patient-actions"
 
 export type Appointment = Prisma.AppointmentGetPayload<{ omit: { id: true } }>
 
-export async function getAppointments() {
+export async function getAppointments(date?: Date) {
   await requireAuth()
-  const appointments = await prisma.appointment.findMany({
+  console.log(date?.toISOString())
+  const session = await requireAuth()
+  if (session.user.role == "admin" || session.user.role == "reception")
+    return await prisma.appointment.findMany({
+      include: {
+        patient: {
+          select: {
+            name: true
+          }
+        },
+        staff: {
+          select: {
+            name: true
+          }
+        }
+      },
+      ...(date ? {
+        where: {
+          date
+        }
+      }: {})
+    })
+  else return await prisma.appointment.findMany({
     include: {
       patient: {
         select: {
@@ -18,19 +39,29 @@ export async function getAppointments() {
       },
       staff: {
         select: {
-          name: true
+          name: true,
+          user: true
         }
       }
+    },
+    where: {
+      staff: {
+        user: {
+          id: session.user.id
+        }
+      },
+      date: date?.toISOString()
     }
   })
-  return appointments
 }
 
-export async function getAppointmentsByDate(date: Date) {
+export async function getAppointmentsByStaff(staffId: string) {
   await requireAuth()
   const appointments = await prisma.appointment.findMany({
     where: {
-      date
+      staff: {
+        id: staffId
+      }
     },
     include: {
       patient: {
@@ -49,7 +80,7 @@ export async function getAppointmentsByDate(date: Date) {
 }
 
 export async function addAppointment(appointment: Appointment) {
-  await requireAuth()
+  await requireAuth((session) => session.user.role == "admin" || session.user.role == "reception")
   return await prisma.appointment.create({
     data: appointment,
     include: {
@@ -68,7 +99,7 @@ export async function addAppointment(appointment: Appointment) {
 }
 
 export async function deleteAppointment(id: string) {
-  await requireAuth()
+  await requireAuth((session) => session.user.role == "admin" || session.user.role == "reception")
   return await prisma.appointment.delete({
     where: { id },
   })

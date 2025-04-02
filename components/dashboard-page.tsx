@@ -20,7 +20,6 @@ import { StaffTab } from "@/components/tabs/staff-tab"
 import { AppointmentsTab } from "@/components/tabs/appointments-tab"
 import { ReportsTab } from "@/components/tabs/reports-tab"
 import { SettingsTab } from "@/components/tabs/settings-tab"
-import { RoomsTab } from "@/components/tabs/rooms-tab"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -55,11 +54,6 @@ export function DashboardPage() {
       id: "appointments",
     },
     {
-      name: "Rooms",
-      icon: BedDouble,
-      id: "rooms",
-    },
-    {
       name: "Reports",
       icon: FileBarChart,
       id: "reports",
@@ -81,7 +75,6 @@ export function DashboardPage() {
           {activeTab === "patients" && <PatientsTab />}
           {activeTab === "staff" && <StaffTab />}
           {activeTab === "appointments" && <AppointmentsTab />}
-          {activeTab === "rooms" && <RoomsTab />}
           {activeTab === "reports" && <ReportsTab />}
           {activeTab === "settings" && <SettingsTab />}
         </main>

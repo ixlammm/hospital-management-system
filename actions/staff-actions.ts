@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
+import { saltAndHashPassword } from "@/lib/password"
 
 export type Staff = Prisma.StaffGetPayload<{ omit: { id: true } }>
 
@@ -11,10 +12,23 @@ export async function getStaff() {
   return await prisma.staff.findMany()
 }
 
-export async function addStaff(staff: Staff) {
+export async function addStaff({ staff, password }: { staff: Staff, password: string }) {
   await requireAuth()
-  return await prisma.staff.create({
-    data: staff,
+  return await prisma.$transaction(async tx => {
+    const user = await tx.user.create({
+      data: {
+        email: staff.email,
+        pswdHash: saltAndHashPassword(password),
+        role: staff.role,
+      }
+    })
+    return await tx.staff.create({
+      data: {
+        ...staff,
+        userId: user.id,
+      },
+    })
+
   })
 }
 
@@ -31,4 +45,15 @@ export async function updateStaff(id: string, staff: Partial<Staff>) {
     where: { id },
     data: staff,
   })
+}
+
+export async function getStaffRoles() {
+  return {
+    "admin": "Administrateur",
+    "medecin": "Médecin",
+    "infirmier": "Infirmier",
+    "radiologue": "Radiologue",
+    "laborantin": "Laborantin",
+    "comptable": "Comptable",
+  }
 }

@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { login } from "@/actions/auth-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,31 +9,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Activity, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { signIn } from "@/auth"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  async function handleSubmit(formData: FormData) {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const user = await login(formData)
-      console.log(user)
-      if (user) {
-        router.push("/dashboard")
-      } else {
-        setError("Login failed")
-      }
-    } catch (err) {
-      setError("An unexpected error occurred")
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const auth = useAuth()
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -50,13 +28,13 @@ export default function LoginPage() {
             <CardDescription className="text-center">Enter your credentials to sign in</CardDescription>
           </CardHeader>
           <CardContent>
-            {error && (
+            {auth.login.error && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{auth.login.error}</AlertDescription>
               </Alert>
             )}
-            <form action={handleSubmit} className="space-y-4">
+            <form action={auth.login.run} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" name="email" type="email" placeholder="admin@hospital.com" required />
@@ -70,8 +48,8 @@ export default function LoginPage() {
                 </div>
                 <Input id="password" name="password" type="password" placeholder="••••••••" required />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign in"}
+              <Button type="submit" className="w-full" disabled={auth.login.loading}>
+                {auth.login.loading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
           </CardContent>

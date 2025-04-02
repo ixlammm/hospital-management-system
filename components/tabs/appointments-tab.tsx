@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import moment from "moment"
 
 import { useEffect, useState } from "react"
 import { CalendarIcon, ChevronLeft, ChevronRight, Clock, MoreHorizontal, Plus } from "lucide-react"
@@ -36,7 +37,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useI18n } from "@/lib/i18n"
 import { useDatabase } from "@/lib/database"
 import { toast } from "@/hooks/use-toast"
-import { getAppointmentsByDate } from "@/actions/appointments-actions"
+import useAsyncArray from "@/hooks/use-asyncarray"
+import { getAppointments } from "@/actions/appointments-actions"
+import Moment from "react-moment"
+import { useSession } from "next-auth/react"
+
+function formatRelativeDate(date: Date) {
+  return moment(date).calendar(null, {
+    sameDay: "[Today]",
+    nextDay: "[Tomorrow]",
+    nextWeek: "dddd", // Example: "Thursday"
+    sameElse: "MMMM YYYY", // Example: "April 2025"
+  });
+}
 
 export function AppointmentsTab() {
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -45,12 +58,26 @@ export function AppointmentsTab() {
   const database = useDatabase()
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false)
   const [appToDelete, setAppToDelete] = useState<string | null>(null)
+  const [appointments, setAppointments] = useState<any[]>([])
+  const session = useSession()
+
+  useEffect(() => {
+    (async () => {
+      const formatedDate = moment(date).format("YYYY-MM-DD")
+      const filterDate = moment.utc(formatedDate).toDate()
+      const appointments = await getAppointments(filterDate)
+      setAppointments(appointments)
+      setNewAppointment((prev) => ({
+        ...prev,
+        date: formatedDate,
+      }))
+    })()
+  }, [date])
 
   const [newAppointment, setNewAppointment] = useState({
     patientId: "",
     doctorId: "",
-    department: "cardiology",
-    date: new Date().toISOString(),
+    date: date?.toISOString(),
     time: "09:00",
     duration: "30",
     type: "check-up",
@@ -60,6 +87,7 @@ export function AppointmentsTab() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
+    console.log(id, value)
     setNewAppointment((prev) => ({
       ...prev,
       [id]: value,
@@ -84,7 +112,7 @@ export function AppointmentsTab() {
 
     await database.doAddAppointment({
       ...newAppointment,
-      date: new Date(newAppointment.date),
+      date: new Date(newAppointment.date ?? ""),
     })
 
     // For demo purposes, we'll just close the dialog
@@ -94,7 +122,6 @@ export function AppointmentsTab() {
     setNewAppointment({
       patientId: "",
       doctorId: "",
-      department: "cardiology",
       date: "",
       time: "09:00",
       duration: "30",
@@ -125,145 +152,127 @@ export function AppointmentsTab() {
           <h2 className="text-2xl font-bold tracking-tight">Appointments</h2>
           <p className="text-muted-foreground">Manage and schedule patient appointments</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-3.5 w-3.5" />
-              <span>New Appointment</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Schedule New Appointment</DialogTitle>
-              <DialogDescription>Enter appointment details to schedule a new patient appointment.</DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-4 py-2">
-              <div className="flex flex-col gap-4">
-                <Label htmlFor="patientId">{t("appointments.selectPatient")}</Label>
-                <Select
-                  defaultValue="Select a patient"
-                  value={newAppointment.patientId}
-                  onValueChange={(value) => handleSelectChange("patientId", value)}
-                >
-                  <SelectTrigger id="patientId">
-                    <SelectValue placeholder="Select a patient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {database.patients.data.map((patient) => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-4">
-                <Label htmlFor="doctorId">{t("appointments.selectDoctor")}</Label>
-                <Select
-                  defaultValue="Select a doctor"
-                  value={newAppointment.doctorId}
-                  onValueChange={(value) => handleSelectChange("doctorId", value)}
-                >
-                  <SelectTrigger id="doctorId">
-                    <SelectValue placeholder="Select a patient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {database.staff.data.map((staff) => (
-                      <SelectItem key={staff.id} value={staff.id}>
-                        {staff.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">{t("appointments.department")}</Label>
-                <Select
-                  value={newAppointment.department}
-                  onValueChange={(value) => handleSelectChange("department", value)}
-                >
-                  <SelectTrigger id="department">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cardiology">Cardiology</SelectItem>
-                    <SelectItem value="neurology">Neurology</SelectItem>
-                    <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                    <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                    <SelectItem value="surgery">Surgery</SelectItem>
-                    <SelectItem value="dermatology">Dermatology</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">{t("appointments.date")}</Label>
-                  <Input id="date" type="date" value={newAppointment.date} onChange={handleInputChange} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">{t("appointments.time")}</Label>
-                  <Input id="time" type="time" value={newAppointment.time} onChange={handleInputChange} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">{t("appointments.duration")}</Label>
-                  <Select
-                    value={newAppointment.duration}
-                    onValueChange={(value) => handleSelectChange("duration", value)}
-                  >
-                    <SelectTrigger id="duration">
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 {t("appointments.minutes")}</SelectItem>
-                      <SelectItem value="30">30 {t("appointments.minutes")}</SelectItem>
-                      <SelectItem value="45">45 {t("appointments.minutes")}</SelectItem>
-                      <SelectItem value="60">60 {t("appointments.minutes")}</SelectItem>
-                      <SelectItem value="90">90 {t("appointments.minutes")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="type">{t("appointments.type")}</Label>
-                  <Select value={newAppointment.type} onValueChange={(value) => handleSelectChange("type", value)}>
-                    <SelectTrigger id="type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="check-up">{t("appointments.checkup")}</SelectItem>
-                      <SelectItem value="consultation">{t("appointments.consultation")}</SelectItem>
-                      <SelectItem value="follow-up">{t("appointments.followup")}</SelectItem>
-                      <SelectItem value="emergency">{t("appointments.emergency")}</SelectItem>
-                      <SelectItem value="procedure">{t("appointments.procedure")}</SelectItem>
-                      <SelectItem value="surgery">{t("appointments.surgery")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">{t("appointments.notes")}</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Enter any additional notes"
-                  value={newAppointment.notes}
-                  onChange={handleInputChange}
-                  className="min-h-[80px]"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                {t("common.cancel")}
-              </Button>
-              <Button onClick={handleAddAppointment}>{t("appointments.scheduleNew")}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+        {
+          session.status == "authenticated" && (session.data.user.role == "admin" || session.data.user.role == "reception") &&
 
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-3.5 w-3.5" />
+                <span>New Appointment</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Schedule New Appointment</DialogTitle>
+                <DialogDescription>Enter appointment details to schedule a new patient appointment.</DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 py-2">
+                <div className="flex flex-col gap-4">
+                  <Label htmlFor="patientId">{t("appointments.selectPatient")}</Label>
+                  <Select
+                    defaultValue="Select a patient"
+                    value={newAppointment.patientId}
+                    onValueChange={(value) => handleSelectChange("patientId", value)}
+                  >
+                    <SelectTrigger id="patientId">
+                      <SelectValue placeholder="Select a patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {database.patients.data.map((patient) => (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          {patient.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <Label htmlFor="doctorId">{t("appointments.selectDoctor")}</Label>
+                  <Select
+                    defaultValue="Select a doctor"
+                    value={newAppointment.doctorId}
+                    onValueChange={(value) => handleSelectChange("doctorId", value)}
+                  >
+                    <SelectTrigger id="doctorId">
+                      <SelectValue placeholder="Select a patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {database.staff.data.map((staff) => (
+                        <SelectItem key={staff.id} value={staff.id}>
+                          {staff.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">{t("appointments.date")}</Label>
+                    <Input id="date" type="date" value={newAppointment.date} onChange={handleInputChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="time">{t("appointments.time")}</Label>
+                    <Input id="time" type="time" value={newAppointment.time} onChange={handleInputChange} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">{t("appointments.duration")}</Label>
+                    <Select
+                      value={newAppointment.duration}
+                      onValueChange={(value) => handleSelectChange("duration", value)}
+                    >
+                      <SelectTrigger id="duration">
+                        <SelectValue placeholder="Select duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 {t("appointments.minutes")}</SelectItem>
+                        <SelectItem value="30">30 {t("appointments.minutes")}</SelectItem>
+                        <SelectItem value="45">45 {t("appointments.minutes")}</SelectItem>
+                        <SelectItem value="60">60 {t("appointments.minutes")}</SelectItem>
+                        <SelectItem value="90">90 {t("appointments.minutes")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">{t("appointments.type")}</Label>
+                    <Select value={newAppointment.type} onValueChange={(value) => handleSelectChange("type", value)}>
+                      <SelectTrigger id="type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="check-up">{t("appointments.checkup")}</SelectItem>
+                        <SelectItem value="consultation">{t("appointments.consultation")}</SelectItem>
+                        <SelectItem value="follow-up">{t("appointments.followup")}</SelectItem>
+                        <SelectItem value="emergency">{t("appointments.emergency")}</SelectItem>
+                        <SelectItem value="procedure">{t("appointments.procedure")}</SelectItem>
+                        <SelectItem value="surgery">{t("appointments.surgery")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">{t("appointments.notes")}</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Enter any additional notes"
+                    value={newAppointment.notes}
+                    onChange={handleInputChange}
+                    className="min-h-[80px]"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  {t("common.cancel")}
+                </Button>
+                <Button onClick={handleAddAppointment}>{t("appointments.scheduleNew")}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      </div>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
         <div className="space-y-6">
           <Card className="p-0 gap-0">
@@ -282,21 +291,25 @@ export function AppointmentsTab() {
             <CardContent className="px-4 pb-4">
               <div className="space-y-4">
                 {
-                  database.appointments.data.filter(x => x.date > new Date()).sort((a, b) => a.date.getSeconds() - b.date.getSeconds()).slice(0, 3).map((appointment) => (
-                    <div key={appointment.id} className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <Clock className="h-5 w-5 text-primary" />
+                  database.appointments.data.filter(x => x.date > new Date()).sort((a, b) => a.date.getSeconds() - b.date.getSeconds()).slice(0, 3).map((appointment) => {
+                    const time = moment(appointment.time, "hh:mm")
+                    appointment.date.setHours(time.hours(), time.minutes())
+                    return (
+                      <div key={appointment.id} className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <Clock className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">
+                            {appointment.staff.name} - {appointment.type}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            <Moment fromNow date={appointment.date} />
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-medium">
-                          {appointment.staff.name} - {appointment.type}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Tomorrow, 11:45 AM
-                        </p>
-                      </div>
-                    </div>
-                  ))
+                    )
+                  })
                 }
               </div>
             </CardContent>
@@ -308,7 +321,7 @@ export function AppointmentsTab() {
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Appointments for {formattedDate}</CardTitle>
               <Badge variant="outline" className="ml-2">
-                {database.appointments.data.length} total
+                {appointments.length} total
               </Badge>
             </div>
             <div className="flex items-center gap-1">
@@ -335,7 +348,7 @@ export function AppointmentsTab() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="space-y-2 p-4 pt-0">
-              {database.appointments.data.map((appointment) => (
+              {appointments.map((appointment) => (
                 <div
                   key={appointment.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3"
@@ -347,22 +360,21 @@ export function AppointmentsTab() {
                     <div>
                       <div className="font-medium">{appointment.time}</div>
                       <div className="text-sm text-muted-foreground">
-                        {appointment.type} • {appointment.department}
+                        {appointment.type}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 rounded-lg border shadow-xs p-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage  src="/doctor.png" alt={appointment.patientId} />
+                        <AvatarImage src="/doctor.png" alt={appointment.patientId} />
                       </Avatar>
                       <div>
                         <div className="text-xs text-muted-foreground">With <b>{appointment.patient.name}</b></div>
                       </div>
                     </div>
                     <div className="hidden md:block text-sm">
-                      <div className="font-medium">{appointment.doctorId}</div>
-                      <div className="text-xs text-muted-foreground">{appointment.department}</div>
+                      <div className="font-medium">{appointment.notes}</div>
                     </div>
                     <Badge className="ml-auto" variant="outline">{appointment.status}</Badge>
                     <DropdownMenu>

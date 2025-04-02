@@ -37,6 +37,16 @@ import { useI18n } from "@/lib/i18n"
 import { useToast } from "@/hooks/use-toast"
 import { useDatabase } from "@/lib/database"
 import { Skeleton } from "../ui/skeleton"
+import { Staff } from "@/actions/staff-actions"
+
+const roles = {
+  "reception": "Réceptionniste",
+  "medecin": "Médecin",
+  "infirmier": "Infirmier",
+  "radiologue": "Radiologue",
+  "laborantin": "Laborantin",
+  "comptable": "Comptable",
+}
 
 export function StaffTab() {
   const { t } = useI18n()
@@ -55,19 +65,14 @@ export function StaffTab() {
   const [newStaff, setNewStaff] = useState({
     firstName: "",
     lastName: "",
-    role: "nurse",
+    role: "medecin",
     department: "cardiology",
     email: "",
     phone: "",
     address: "",
-    city: "",
-    state: "",
-    zipCode: "",
     gender: "female",
-    qualifications: "",
-    specialization: "",
-    experience: "",
     notes: "",
+    password: ""
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,25 +101,20 @@ export function StaffTab() {
     // Create the staff object
     const staffMember = {
       name: `${newStaff.role === "doctor" ? "Dr. " : ""}${newStaff.firstName} ${newStaff.lastName}`,
-      role:
-        newStaff.role === "doctor"
-          ? newStaff.specialization || "Doctor"
-          : newStaff.role.charAt(0).toUpperCase() + newStaff.role.slice(1),
-      department: newStaff.department.charAt(0).toUpperCase() + newStaff.department.slice(1),
+      role: newStaff.role as Staff["role"],
       status: "On Duty",
       contact: newStaff.phone,
       email: newStaff.email,
       joined: new Date(),
-      gender: newStaff.gender,
+      gender: newStaff.gender as Staff["gender"],
       address: newStaff.address,
-      qualifications: newStaff.qualifications,
-      specialization: newStaff.specialization,
-      experience: newStaff.experience,
       notes: newStaff.notes,
+      userId: null,
     }
 
+
     // Add the staff member to the database
-    await doAddStaff(staffMember)
+    await doAddStaff(staffMember, newStaff.password)
 
     toast({
       title: t("staff.addSuccess"),
@@ -131,14 +131,9 @@ export function StaffTab() {
       email: "",
       phone: "",
       address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      gender: "female",
-      qualifications: "",
-      specialization: "",
-      experience: "",
+      gender: "male",
       notes: "",
+      password: ""
     })
   }
 
@@ -181,13 +176,9 @@ export function StaffTab() {
     const matchesSearch =
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.department.toLowerCase().includes(searchTerm.toLowerCase())
+      member.role.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesDepartment =
-      departmentFilter === "all" || member.department.toLowerCase() === departmentFilter.toLowerCase()
-
-    return matchesSearch && matchesDepartment
+    return matchesSearch
   })
 
   return (
@@ -249,10 +240,11 @@ export function StaffTab() {
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="doctor">{t("staff.doctor")}</SelectItem>
-                        <SelectItem value="nurse">{t("staff.nurse")}</SelectItem>
-                        <SelectItem value="technician">{t("staff.technician")}</SelectItem>
-                        <SelectItem value="administrative">{t("staff.administrative")}</SelectItem>
+                        {
+                          Object.entries(roles).map(([key, value]) => (
+                            <SelectItem key={key} value={key}>{value}</SelectItem>
+                          ))
+                        }
                       </SelectContent>
                     </Select>
                   </div>
@@ -287,10 +279,6 @@ export function StaffTab() {
                       <RadioGroupItem value="male" id="male" />
                       <Label htmlFor="male">{t("staff.male")}</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="other" id="other" />
-                      <Label htmlFor="other">{t("staff.other")}</Label>
-                    </div>
                   </RadioGroup>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -314,6 +302,18 @@ export function StaffTab() {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">{t("staff.password")}</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="John1234"
+                      value={newStaff.password}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">{t("staff.address")}</Label>
                   <Input
@@ -323,51 +323,6 @@ export function StaffTab() {
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">{t("staff.city")}</Label>
-                    <Input id="city" placeholder="City" value={newStaff.city} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">{t("staff.state")}</Label>
-                    <Input id="state" placeholder="State" value={newStaff.state} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label htmlFor="zipCode">{t("staff.zipCode")}</Label>
-                    <Input id="zipCode" placeholder="Zip code" value={newStaff.zipCode} onChange={handleInputChange} />
-                  </div>
-                </div>
-                {newStaff.role === "doctor" && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="specialization">{t("staff.specialization")}</Label>
-                      <Input
-                        id="specialization"
-                        placeholder="Medical specialization"
-                        value={newStaff.specialization}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="qualifications">{t("staff.qualifications")}</Label>
-                      <Input
-                        id="qualifications"
-                        placeholder="Degrees and certifications"
-                        value={newStaff.qualifications}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="experience">{t("staff.experience")}</Label>
-                      <Input
-                        id="experience"
-                        placeholder="Years of experience"
-                        value={newStaff.experience}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="notes">{t("staff.notes")}</Label>
                   <Textarea
@@ -428,10 +383,8 @@ export function StaffTab() {
           <Table className="p-4">
             <TableHeader>
               <TableRow>
-                <TableHead>{t("staff.staffId")}</TableHead>
                 <TableHead>{t("staff.name")}</TableHead>
                 <TableHead className="hidden md:table-cell">{t("staff.role")}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t("staff.department")}</TableHead>
                 <TableHead>{t("staff.status")}</TableHead>
                 <TableHead className="hidden lg:table-cell">{t("staff.contact")}</TableHead>
                 <TableHead className="hidden md:table-cell">{t("staff.joined")}</TableHead>
@@ -454,7 +407,6 @@ export function StaffTab() {
                   ))
                   : filteredStaff.map((member) => (
                     <TableRow key={member.id}>
-                      <TableCell className="font-medium">{member.id}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
@@ -470,7 +422,6 @@ export function StaffTab() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{member.role}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{member.department}</TableCell>
                       <TableCell>
                         <Badge
                           variant={

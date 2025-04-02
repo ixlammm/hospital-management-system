@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react";
 import { Activity } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
@@ -21,7 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@radix-ui/react-separator";
 import { Tooltip, TooltipContent, TooltipHint, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { TooltipPortal } from "@radix-ui/react-tooltip";
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { Staff } from "@/actions/staff-actions";
+import { Skeleton } from "./ui/skeleton";
 
 interface DashboardSidebarProps {
   navigationItems: {
@@ -37,11 +40,27 @@ export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: D
   const { t } = useI18n();
   const sidebar = useSidebar()
 
-  const groupedItems = {
-    CLINIC: ["overview", "patients", "staff", "appointments"],
-    RESOURCES: ["rooms"],
-    REPORTS: ["reports", "settings"],
-  };
+  const session = useSession()
+
+  const [groupedItems, setGroupedItems] = useState({
+    DASHBOARD: ["overview", "settings"],
+  });
+
+  useEffect(() => {
+    if (session.status == "authenticated") {
+      const role = (session.data.user as any).role as Staff["role"];
+      const groupedItems = {
+        DASHBOARD:
+          role === "admin" ? ["overview", "patients", "staff", "appointments", "settings"] :
+            role == "medecin" ? ["overview", "patients", "appointments", "settings"] :
+            role == "reception" ? ["overview", "patients", "appointments", "settings"] :
+              role == "infirmier" ? ["overview", "patients", "appointments", "settings"] :
+                role == "radiologue" ? ["overview", "patients", "appointments", "settings"] :
+                  role == "laborantin" ? ["overview", "patients", "appointments", "settings"] : []
+      };
+      setGroupedItems(groupedItems);
+    }
+  }, [session])
 
   return (
     <Sidebar {...sidebar} collapsible="icon">
@@ -100,6 +119,15 @@ export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: D
                         </SidebarMenuItem>
                       );
                     })}
+                  {
+                    session.status == "loading" && new Array(4).fill(0).map((_, i) => (
+                      <SidebarMenuItem key={i}>
+                        <SidebarMenuButton disabled variant={"outline"} asChild>
+                          <Skeleton className="bg-gray-300"/>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))
+                  }
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
