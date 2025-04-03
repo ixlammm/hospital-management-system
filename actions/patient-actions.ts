@@ -3,8 +3,7 @@
 import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
-
-export type Patient = Prisma.PatientGetPayload<{ omit: { id: true } }>
+import { Patient } from "@/lib/database/types"
 
 export async function getPatients() {
   const session = await requireAuth()

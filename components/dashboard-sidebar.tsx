@@ -23,8 +23,8 @@ import { Separator } from "@radix-ui/react-separator";
 import { Tooltip, TooltipContent, TooltipHint, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { TooltipPortal } from "@radix-ui/react-tooltip";
 import { Fragment, useEffect, useState } from "react";
-import { Staff } from "@/actions/staff-actions";
 import { Skeleton } from "./ui/skeleton";
+import { Staff } from "@/lib/database/types";
 
 interface DashboardSidebarProps {
   navigationItems: {
@@ -51,12 +51,12 @@ export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: D
       const role = (session.data.user as any).role as Staff["role"];
       const groupedItems = {
         DASHBOARD:
-          role === "admin" ? ["overview", "patients", "staff", "appointments", "settings"] :
-            role == "medecin" ? ["overview", "patients", "appointments", "settings"] :
+          role === "admin" ? ["overview", "patients", "staff", "appointments", "prescriptions", "samples", "radio", "settings"] :
+            role == "medecin" ? ["overview", "patients", "appointments", "prescriptions", "settings"] :
             role == "reception" ? ["overview", "patients", "appointments", "settings"] :
-              role == "infirmier" ? ["overview", "patients", "appointments", "settings"] :
-                role == "radiologue" ? ["overview", "patients", "appointments", "settings"] :
-                  role == "laborantin" ? ["overview", "patients", "appointments", "settings"] : []
+            role == "infirmier" ? ["overview", "patients", "appointments", "settings"] :
+            role == "radiologue" ? ["overview", "patients", "appointments", "settings"] :
+            role == "laborantin" ? ["overview", "patients", "appointments", "settings"] : []
       };
       setGroupedItems(groupedItems);
     }

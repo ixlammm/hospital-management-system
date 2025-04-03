@@ -4,8 +4,7 @@ import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { saltAndHashPassword } from "@/lib/password"
-
-export type Staff = Prisma.StaffGetPayload<{ omit: { id: true } }>
+import { Staff } from "@/lib/database/types"
 
 export async function getStaff() {
   await requireAuth()

@@ -12,6 +12,8 @@ import {
   Search,
   Plus,
   ChevronDown,
+  Syringe,
+  TextSelection
 } from "lucide-react"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { OverviewTab } from "@/components/tabs/overview-tab"
@@ -27,6 +29,9 @@ import { useI18n } from "@/lib/i18n"
 import { SidebarInset, SidebarTrigger } from "./ui/sidebar"
 import { Separator } from "./ui/separator"
 import { DashboardHeader } from "./dashboard-header"
+import { PrescriptionsTab } from "./tabs/prescriptions-tab"
+import { SamplesTab } from "./tabs/samples-tab"
+import { RadioTab } from "./tabs/radio-tab"
 
 export function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -59,6 +64,21 @@ export function DashboardPage() {
       id: "reports",
     },
     {
+      name: "Prescriptions",
+      icon: TextSelection,
+      id: "prescriptions"
+    },
+    {
+      name: "Samples",
+      icon: Syringe,
+      id: "samples",
+    },
+    {
+      name: "Radio",
+      icon: BedDouble,
+      id: "radio",
+    },
+    {
       name: "Settings",
       icon: Settings,
       id: "settings",
@@ -76,6 +96,9 @@ export function DashboardPage() {
           {activeTab === "staff" && <StaffTab />}
           {activeTab === "appointments" && <AppointmentsTab />}
           {activeTab === "reports" && <ReportsTab />}
+          {activeTab === "prescriptions" && <PrescriptionsTab />}
+          {activeTab === "samples" && <SamplesTab />}
+          {activeTab === "radio" && <RadioTab />}
           {activeTab === "settings" && <SettingsTab />}
         </main>
       </SidebarInset>

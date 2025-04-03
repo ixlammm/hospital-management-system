@@ -11,6 +11,11 @@ export type Translations = {
   [key: string]: string | Translations
 }
 
+
+type RecursiveKey<T> = T extends object
+    ? { [K in keyof T]: K extends string ? `${K}` | `${K}.${RecursiveKey<T[K]>}` : never}[keyof T]
+    : never;
+
 // Translation dictionaries
 export const translations: Record<Locale, Translations> = {
   en: {
@@ -44,6 +49,9 @@ export const translations: Record<Locale, Translations> = {
       billing: "Billing",
       settings: "Settings",
       rooms: "Rooms & Beds",
+      prescriptions: "Prescriptions",
+      samples: "Samples",
+      radio: "Radio",
     },
     patients: {
       title: "Patients",
@@ -279,6 +287,9 @@ export const translations: Record<Locale, Translations> = {
       billing: "Facturation",
       settings: "Paramètres",
       rooms: "Chambres & Lits",
+      prescriptions: "Ordonnances",
+      samples: "Prélèvements",
+      radio: "Radio",
     },
     patients: {
       title: "Patients",
@@ -490,7 +501,7 @@ export const translations: Record<Locale, Translations> = {
 type I18nContextType = {
   locale: Locale
   setLocale: (locale: Locale) => void
-  t: (key: RecursiveKey<typeof translations["en"]>) => string
+  t: (key: RecursiveKey<typeof translations.en>) => string
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
@@ -500,7 +511,7 @@ export function I18nProvider({ children, defaultLocale = "fr" }: { children: Rea
   const [locale, setLocale] = useState<Locale>(defaultLocale)
 
   // Translation function
-  const t = (key: string): string => {
+  const t = (key: RecursiveKey<typeof translations.en>): string => {
     const keys = key.split(".")
     let value: any = translations[locale]
 
@@ -515,12 +526,9 @@ export function I18nProvider({ children, defaultLocale = "fr" }: { children: Rea
   return <I18nContext.Provider value={{ locale, setLocale, t }}>{children}</I18nContext.Provider>
 }
 
-type RecursiveKey<T> = T extends object
-    ? { [K in keyof T]: K extends string ? `${K}` | `${K}.${RecursiveKey<T[K]>}` : never}[keyof T]
-    : never;
 
 // Hook to use the i18n context
-export function useI18n() {
+export function useI18n(): I18nContextType {
   const context = useContext(I18nContext)
   if (context === undefined) {
     // Return a default context instead of throwing an error

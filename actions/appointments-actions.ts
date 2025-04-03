@@ -3,12 +3,9 @@
 import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
-
-export type Appointment = Prisma.AppointmentGetPayload<{ omit: { id: true } }>
+import { Appointment } from "@/lib/database/types"
 
 export async function getAppointments(date?: Date) {
-  await requireAuth()
-  console.log(date?.toISOString())
   const session = await requireAuth()
   if (session.user.role == "admin" || session.user.role == "reception")
     return await prisma.appointment.findMany({

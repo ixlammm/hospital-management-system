@@ -37,7 +37,7 @@ import { useI18n } from "@/lib/i18n"
 import { useToast } from "@/hooks/use-toast"
 import { useDatabase } from "@/lib/database"
 import { Skeleton } from "../ui/skeleton"
-import { Staff } from "@/actions/staff-actions"
+import { Staff } from "@/lib/database/types"
 
 const roles = {
   "reception": "Réceptionniste",
@@ -72,7 +72,8 @@ export function StaffTab() {
     address: "",
     gender: "female",
     notes: "",
-    password: ""
+    password: "",
+
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -114,7 +115,7 @@ export function StaffTab() {
 
 
     // Add the staff member to the database
-    await doAddStaff(staffMember, newStaff.password)
+    await doAddStaff(staffMember as any, newStaff.password)
 
     toast({
       title: t("staff.addSuccess"),

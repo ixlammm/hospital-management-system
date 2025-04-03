@@ -27,6 +27,9 @@ model Patient {
   lastVisit  DateTime
   notes      String?
   appointments Appointment[]
+  prescriptions Prescription[]
+  radio      Radio[]
+  samples    Sample[]
 }
 
 model Staff {
@@ -42,7 +45,12 @@ model Staff {
   address        String?
   notes          String?
   user           User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  a_hex          String?
+  r_encrypted    String?
   appointments   Appointment[]
+  prescriptions  Prescription[]
+  radio          Radio[]
+  samples        Sample[]
 }
 
 enum StaffRole {
@@ -73,6 +81,40 @@ model Appointment {
 
   patient     Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   staff       Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Prescription {
+  id              String  @id @default(uuid())
+  date            DateTime
+  description     String
+  patientId       String
+  doctorId        String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Sample {
+  id              String  @id @default(uuid())
+  date            DateTime
+  observation     String
+  temperature     Float
+  bloodPressure   String
+  heartRate       Int
+  patientId       String
+  doctorId        String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Radio {
+  id              String  @id @default(uuid())
+  date            DateTime
+  type            String
+  result          String
+  patientId       String
+  doctorId        String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -108,6 +150,7 @@ model Account {
 
   @@id([provider, providerAccountId])
 }
+
 
 model Session {
   sessionToken String   @unique
