@@ -1,5 +1,6 @@
 "use client"
 
+import { sub } from "date-fns"
 import { createContext, useContext, useState, type ReactNode } from "react"
 
 // Define available locales
@@ -34,10 +35,32 @@ export const translations: Record<Locale, Translations> = {
       adding: "Adding...",
       edit: "Edit",
       delete: "Delete",
+      deleting: "Deleting...",
       view: "View",
       actions: "Actions",
       status: "Status",
       total: "total",
+      date: "Date",
+      type: "Type",
+      doctor: "Doctor",
+      patient: "Patient",
+      action: "Action",
+      selectDoctor: "Select Doctor",
+      selectPatient: "Select Patient",
+      confirmDelete: "Confirm Delete",
+      confirmDeleteMessage: "Are you sure you want to delete this item? This action cannot be undone.",
+      details: "Details",
+      exam: "Examination",
+      subject: "Subject",
+      description: "Description",
+      amount: "Amount",
+      noData: "No data available",
+      changePasswordTitle: "Change Password",
+      changePasswordDescription: "Please change your password to continue using the system.",
+      changePassword: "Change Password",
+      changingPassword: "Changing password...",
+      password: "Password",
+      confirmPassword: "Confirm Password",
     },
     navigation: {
       overview: "Overview",
@@ -52,6 +75,9 @@ export const translations: Record<Locale, Translations> = {
       prescriptions: "Prescriptions",
       samples: "Samples",
       radio: "Radio",
+      analysis: "Analysis",
+      research: "Research",
+      invoice: "Invoice",
     },
     patients: {
       title: "Patients",
@@ -238,6 +264,30 @@ export const translations: Record<Locale, Translations> = {
       totalRooms: "Total Rooms",
       roomTypes: "Room Types",
       floorOccupancy: "Floor Occupancy",
+    },
+    radio: {
+      title: "Radio",
+      addRadio: "Add Radio",
+      addNewRadio: "Add New Radio",
+      addNewRadioDescription: "Enter radio details to add a new radio to the system.",
+    },
+    analysis: {
+      title: "Analysis",
+      addAnalysis: "Add Analysis",
+      addNewAnalysis: "Add New Analysis",
+      addNewAnalysisDescription: "Enter analysis details to add a new analysis to the system.",
+    },
+    research: {
+      title: "Research",
+      addResearch: "Add Research",
+      addNewResearch: "Add New Research",
+      addNewResearchDescription: "Enter research details to add a new research to the system.",
+    },
+    invoice: {
+      title: "Invoice",
+      addInvoice: "Add Invoice",
+      addNewInvoice: "Add New Invoice",
+      addNewInvoiceDescription: "Enter invoice details to add a new invoice to the system.",
     },
     settings: {
       title: "Settings",
@@ -507,7 +557,7 @@ type I18nContextType = {
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
 
 // Provider component
-export function I18nProvider({ children, defaultLocale = "fr" }: { children: ReactNode; defaultLocale?: Locale }) {
+export function I18nProvider({ children, defaultLocale = "en" }: { children: ReactNode; defaultLocale?: Locale }) {
   const [locale, setLocale] = useState<Locale>(defaultLocale)
 
   // Translation function
@@ -533,7 +583,7 @@ export function useI18n(): I18nContextType {
   if (context === undefined) {
     // Return a default context instead of throwing an error
     return {
-      locale: "fr" as Locale,
+      locale: "en" as Locale,
       setLocale: () => {},
       t: (key: RecursiveKey<typeof translations["en"]>) => key
     }

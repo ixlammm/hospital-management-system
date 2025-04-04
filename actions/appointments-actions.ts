@@ -7,7 +7,7 @@ import { Appointment } from "@/lib/database/types"
 
 export async function getAppointments(date?: Date) {
   const session = await requireAuth()
-  if (session.user.role == "admin" || session.user.role == "reception")
+  if (session.role == "admin" || session.role == "reception")
     return await prisma.appointment.findMany({
       include: {
         patient: {
@@ -44,7 +44,7 @@ export async function getAppointments(date?: Date) {
     where: {
       staff: {
         user: {
-          id: session.user.id
+          id: session.id
         }
       },
       date: date?.toISOString()

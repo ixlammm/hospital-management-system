@@ -4,15 +4,18 @@ import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { Patient } from "@/lib/database/types"
+import { saltAndHashPassword } from "@/lib/password"
 
 export async function getPatients() {
   const session = await requireAuth()
-  if (session.user.role == "admin" || session.user.role == "reception")
+  console.log("GET PATIENTS")
+  console.log(session)
+  if (session.role == "admin" || session.role == "reception")
     return await prisma.patient.findMany()
   else {
     return (await prisma.user.findUnique({
       where: {
-        id: session.user.id,
+        id: session.id,
       },
       include: {
         staff: {
@@ -29,10 +32,22 @@ export async function getPatients() {
   }
 }
 
-export async function addPatient(patient: Patient) {
+export async function addPatient({ patient, password} : { patient: Patient, password: string }) {
   await requireAuth()
-  return await prisma.patient.create({
-    data: patient,
+  return await prisma.$transaction(async tx => {
+    const user = await tx.user.create({
+      data: {
+        email: patient.email!,
+        pswdHash: saltAndHashPassword(password),
+        role: "patient",
+      }
+    })
+    return await tx.patient.create({
+      data: {
+        ...patient,
+        userId: user.id,
+      },
+    })
   })
 }
 

@@ -4,7 +4,8 @@ import type React from "react"
 
 import { Bell, Search, Clock, Space, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import Moment from "react-moment"
+
+const Moment = dynamic(() => import("react-moment"), { ssr: false })
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,7 @@ import { useI18n } from "@/lib/i18n"
 import { SidebarTrigger } from "./ui/sidebar"
 import { useAuth } from "@/hooks/use-auth"
 import { useSession } from "next-auth/react"
+import dynamic from "next/dynamic"
 
 interface DashboardHeaderProps {
   activeTab: string

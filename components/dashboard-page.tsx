@@ -13,7 +13,8 @@ import {
   Plus,
   ChevronDown,
   Syringe,
-  TextSelection
+  TextSelection,
+  ArrowBigDownDash
 } from "lucide-react"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { OverviewTab } from "@/components/tabs/overview-tab"
@@ -29,9 +30,12 @@ import { useI18n } from "@/lib/i18n"
 import { SidebarInset, SidebarTrigger } from "./ui/sidebar"
 import { Separator } from "./ui/separator"
 import { DashboardHeader } from "./dashboard-header"
-import { PrescriptionsTab } from "./tabs/prescriptions-tab"
 import { SamplesTab } from "./tabs/samples-tab"
 import { RadioTab } from "./tabs/radio-tab"
+import { AnalysisTab } from "./tabs/analysis-tab"
+import { ResearchTab } from "./tabs/research-tab"
+import { InvoiceTab } from "./tabs/invoice-tab"
+import { PrescriptionsTab } from "./tabs/prescriptions-tab"
 
 export function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -79,6 +83,21 @@ export function DashboardPage() {
       id: "radio",
     },
     {
+      name: "Analysis",
+      icon: Search,
+      id: "analysis",
+    },
+    {
+      name: "Research",
+      icon: Plus,
+      id: "research",
+    },
+    {
+      name: "Invoice",
+      icon: ArrowBigDownDash,
+      id: "invoice",
+    },
+    {
       name: "Settings",
       icon: Settings,
       id: "settings",
@@ -99,6 +118,9 @@ export function DashboardPage() {
           {activeTab === "prescriptions" && <PrescriptionsTab />}
           {activeTab === "samples" && <SamplesTab />}
           {activeTab === "radio" && <RadioTab />}
+          {activeTab === "analysis" && <AnalysisTab />}
+          {activeTab === "research" && <ResearchTab />}
+          {activeTab === "invoice" && <InvoiceTab />}
           {activeTab === "settings" && <SettingsTab />}
         </main>
       </SidebarInset>

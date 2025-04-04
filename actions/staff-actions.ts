@@ -7,8 +7,23 @@ import { saltAndHashPassword } from "@/lib/password"
 import { Staff } from "@/lib/database/types"
 
 export async function getStaff() {
-  await requireAuth()
-  return await prisma.staff.findMany()
+  const session = await requireAuth()
+  if (session.role == "admin" || session.role == "reception")
+    return await prisma.staff.findMany()
+  else {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: session.id,
+      },
+      include: {
+        staff: true,
+      }
+    })
+    if (user) {
+      return [user.staff!]
+    }
+    return []
+  }
 }
 
 export async function addStaff({ staff, password }: { staff: Staff, password: string }) {

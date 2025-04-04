@@ -17,6 +17,7 @@ datasource db {
 
 model Patient {
   id         String  @id @default(uuid())
+  userId     String? @unique
   name       String
   age        Int
   gender     Gender
@@ -30,13 +31,17 @@ model Patient {
   prescriptions Prescription[]
   radio      Radio[]
   samples    Sample[]
+  analyses   Analysis[]
+  archives   Archive[]
+  invoices   Invoice[]
+  user           User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Staff {
   id             String  @id @default(uuid())
   userId         String? @unique
   name           String
-  role           StaffRole
+  role           UserRole
   status         String
   contact        String
   email          String  @unique
@@ -51,9 +56,13 @@ model Staff {
   prescriptions  Prescription[]
   radio          Radio[]
   samples        Sample[]
+  analyses       Analysis[]
+  research       Research[]
+  invoices       Invoice[]
+  monthlyReports MonthlyReport[]
 }
 
-enum StaffRole {
+enum UserRole {
   admin
   reception
   medecin
@@ -61,6 +70,7 @@ enum StaffRole {
   radiologue
   laborantin
   comptable
+  patient
 }
 
 enum Gender {
@@ -117,6 +127,55 @@ model Radio {
   staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }
 
+model Analysis {
+  id              String  @id @default(uuid())
+  date            DateTime
+  exam            String
+  details         String
+  patientId       String
+  doctorId        String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Research {
+  id              String  @id @default(uuid())
+  doctorId        String 
+  date            DateTime
+  subject         String
+  description     String
+  staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Archive {
+  id              String  @id @default(uuid())
+  patientId       String
+  date            DateTime
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id              String  @id @default(uuid())
+  patientId       String
+  doctorId        String
+  date            DateTime
+  amount          Float
+  status          String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model MonthlyReport {
+  id              String  @id @default(uuid())
+  month           Int
+  revenue         Float
+  expenses        Float
+  profit          Float
+  staffId         String
+  comments        String?
+  staff           Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
 model User {
   id            String          @id @default(cuid())
   name          String?
@@ -125,8 +184,10 @@ model User {
   accounts      Account[]
   sessions      Session[]
   staff         Staff?
-  role           StaffRole
+  patient       Patient?
+  role          UserRole
   createdAt DateTime @default(now())
+  passwordChanged Boolean @default(false)
   updatedAt DateTime @updatedAt
 }
 

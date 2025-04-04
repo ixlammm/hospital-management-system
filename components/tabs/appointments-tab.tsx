@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import moment from "moment"
+const Moment = dynamic(() => import("react-moment"), { ssr: false })
 
 import { useEffect, useState } from "react"
 import { CalendarIcon, ChevronLeft, ChevronRight, Clock, MoreHorizontal, Plus } from "lucide-react"
@@ -39,8 +39,9 @@ import { useDatabase } from "@/lib/database"
 import { toast } from "@/hooks/use-toast"
 import useAsyncArray from "@/hooks/use-asyncarray"
 import { getAppointments } from "@/actions/appointments-actions"
-import Moment from "react-moment"
+import moment from "moment"
 import { useSession } from "next-auth/react"
+import dynamic from "next/dynamic"
 
 function formatRelativeDate(date: Date) {
   return moment(date).calendar(null, {

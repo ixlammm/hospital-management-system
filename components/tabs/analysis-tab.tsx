@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { useDatabase } from "@/lib/database"
-import { Radio } from "@/lib/database/types"
+import { Analysis, Radio } from "@/lib/database/types"
 import { useI18n } from "@/lib/i18n"
 import { Card, CardContent } from "../ui/card"
 import SelectDoctor from "../inputs/select-doctor"
@@ -18,27 +18,27 @@ import { DialogRow } from "../inputs/dialog-layout"
 import DataTable from "../inputs/data-table"
 import Total from "../inputs/total"
 
-export function RadioTab() {
+export function AnalysisTab() {
     const { t } = useI18n()
     const searchState = useState("")
     const database = useDatabase()
-    const initialState: Radio = {
+    const initialState: Analysis = {
         date: new Date(),
-        type: "",
-        result: "",
         doctorId: "",
-        patientId: ""
+        patientId: "",
+        details: "",
+        exam: ""
     }
-    const radio = useNamedState(initialState)
+    const analysis = useNamedState(initialState)
     const dialog = useAddDialog()
 
     const handleAdd = async () => {
-        await database.doAddRadio(radio.value)
-        radio.update(initialState)
+        await database.doAddAnalysis(analysis.value)
+        analysis.update(initialState)
     }
 
-    const deleteDialog = useConfirmDeleteDialog(async (item) => {
-        await database.doDeleteRadio(item)
+    const deleteDialog = useConfirmDeleteDialog(async (analysis) => {
+        await database.doDeleteAnalysis(analysis)
     })
 
     return (
@@ -46,20 +46,21 @@ export function RadioTab() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-bold tracking-tight">{t("radio.title")}</h2>
-                        <Total array={database.radios}/>
+                        <h2 className="text-2xl font-bold tracking-tight">{t("analysis.title")}</h2>
+                        <Total array={database.analyses}/>
                     </div>
                     <DialogAdd
-                        addText={t("radio.addRadio")}
-                        title={t("radio.addNewRadio")}
-                        description={t("radio.addNewRadioDescription")}
+                        addText={t("analysis.addAnalysis")}
+                        title={t("analysis.addNewAnalysis")}
+                        description={t("analysis.addNewAnalysisDescription")}
                         dialog={dialog}
                         handleAdd={handleAdd}
                     >
-                        <DialogTextInput state={radio} name={"type"} title="Test" />
+                        <DialogTextInput state={analysis} name={"details"} title="Details" />
+                        <DialogTextInput state={analysis} name={"exam"} title="Exam Result" />
                         <DialogRow>
-                            <SelectDoctor state={radio} />
-                            <SelectPatient state={radio} />
+                            <SelectDoctor state={analysis} />
+                            <SelectPatient state={analysis} />
                         </DialogRow>
                     </DialogAdd>
                 </div>
@@ -67,9 +68,9 @@ export function RadioTab() {
                     <CardSearchHeader searchState={searchState} />
                     <CardContent className="p-4">
                         <DataTable
-                            array={database.radios}
-                            header={[t("common.date"), t("common.type"), t("common.doctor"), t("common.patient")]}
-                            cols={["date", "type", "staff.name", "patient.name"]}
+                            array={database.analyses}
+                            header={[t("common.date"), t("common.doctor"), t("common.patient"), t("common.details"), t("common.exam")]}
+                            cols={["date", "staff.name", "patient.name", "details", "exam"]}
                             transform={{
                                 "date": (value: Date) => value.toLocaleDateString(),
                             }}

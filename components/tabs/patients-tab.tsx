@@ -58,6 +58,7 @@ export function PatientsTab() {
     email: "",
     address: "",
     notes: "",
+    password: ""
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -98,10 +99,11 @@ export function PatientsTab() {
         status: "Active",
         lastVisit: new Date(),
         notes: newPatient.notes,
+        userId: null
       }
 
       // Add the patient to the database
-      await database.doAddPatient(patient)
+      await database.doAddPatient(patient, newPatient.password)
 
       toast({
         title: t("patients.addSuccess"),
@@ -119,6 +121,8 @@ export function PatientsTab() {
         email: "",
         address: "",
         notes: "",
+        password: ""
+
       })
     } catch (error) {
       console.error("Error adding patient:", error)
@@ -272,6 +276,16 @@ export function PatientsTab() {
                       onChange={handleInputChange}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t("staff.password")}</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="John1234"
+                    value={newPatient.password}
+                    onChange={handleInputChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">{t("patients.address")}</Label>
