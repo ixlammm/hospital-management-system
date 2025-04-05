@@ -46,13 +46,13 @@ export function PrescriptionsTab() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-bold tracking-tight">{t("prescription.title")}</h2>
+                        <h2 className="text-2xl font-bold tracking-tight">{t("prescriptions.title")}</h2>
                         <Total array={database.prescriptions}/>
                     </div>
                     <DialogAdd
-                        addText={t("prescription.addPrescription")}
-                        title={t("prescription.addNewPrescription")}
-                        description={t("prescription.addNewPrescriptionDescription")}
+                        addText={t("prescriptions.addPrescription")}
+                        title={t("prescriptions.addNewPrescription")}
+                        description={t("prescriptions.addNewPrescriptionDescription")}
                         dialog={dialog}
                         handleAdd={handleAdd}
                     >

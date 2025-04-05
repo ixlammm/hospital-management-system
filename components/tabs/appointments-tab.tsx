@@ -36,7 +36,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useI18n } from "@/lib/i18n"
 import { useDatabase } from "@/lib/database"
-import { toast } from "@/hooks/use-toast"
 import useAsyncArray from "@/hooks/use-asyncarray"
 import { getAppointments } from "@/actions/appointments-actions"
 import moment from "moment"
@@ -130,10 +129,6 @@ export function AppointmentsTab() {
   const confirmDeleteAppointment = async () => {
     if (selectedApp) {
       await database.doDeleteAppointment(selectedApp)
-      toast({
-        title: t("patients.deleteSuccess"),
-        description: t("patients.deleteSuccessMessage"),
-      })
       setConfirmDeleteDialogOpen(false)
       setSelectedApp(null)
     }

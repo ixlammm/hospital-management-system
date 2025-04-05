@@ -20,7 +20,7 @@ import Total from "../inputs/total"
 
 export function AnalysisTab() {
     const { t } = useI18n()
-    const searchState = useState("")
+    const searchState = useNamedState("")
     const database = useDatabase()
     const initialState: Analysis = {
         date: new Date(),

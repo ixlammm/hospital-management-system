@@ -23,7 +23,7 @@ import DialogNumberInput from "../inputs/number-input"
 
 export function InvoiceTab() {
     const { t } = useI18n()
-    const searchState = useState("")
+    const searchState = useNamedState("")
     const database = useDatabase()
     const initialState: Invoice = {
         date: new Date(),

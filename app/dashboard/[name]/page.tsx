@@ -7,7 +7,6 @@ import { OverviewTab } from "@/components/tabs/overview-tab"
 import { PatientsTab } from "@/components/tabs/patients-tab"
 import { StaffTab } from "@/components/tabs/staff-tab"
 import { AppointmentsTab } from "@/components/tabs/appointments-tab"
-import { ReportsTab } from "@/components/tabs/reports-tab"
 import { SettingsTab } from "@/components/tabs/settings-tab"
 import { useI18n } from "@/lib/i18n"
 import { SidebarInset } from "@/components/ui/sidebar"
@@ -34,7 +33,6 @@ export default function DashboardPage({ params }: { params: Promise<{ name: stri
             {name === "patients" && <PatientsTab />}
             {name === "staff" && <StaffTab />}
             {name === "appointments" && <AppointmentsTab />}
-            {name === "reports" && <ReportsTab />}
             {name === "prescriptions" && <PrescriptionsTab />}
             {name === "samples" && <SamplesTab />}
             {name === "radio" && <RadioTab />}

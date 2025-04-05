@@ -55,6 +55,12 @@ export async function updateRadio(id: string, radio: Partial<Radio>) {
   await requireAuth()
   return await prisma.radio.update({
     where: { id },
-    data: radio,
+    data: {
+      date: radio.date,
+      doctorId: radio.doctorId,
+      patientId: radio.patientId,
+      result: radio.result,
+      type: radio.type
+    },
   })
 }

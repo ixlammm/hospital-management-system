@@ -34,7 +34,6 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { useI18n } from "@/lib/i18n"
-import { useToast } from "@/hooks/use-toast"
 import { useDatabase } from "@/lib/database"
 import { Skeleton } from "../ui/skeleton"
 import { Staff } from "@/lib/database/types"
@@ -50,7 +49,6 @@ const roles = {
 
 export function StaffTab() {
   const { t } = useI18n()
-  const { toast } = useToast()
   const { staff, doAddStaff, doDeleteStaff, doUpdateStaff } = useDatabase()
   const [searchTerm, setSearchTerm] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -117,11 +115,6 @@ export function StaffTab() {
     // Add the staff member to the database
     await doAddStaff(staffMember as any, newStaff.password)
 
-    toast({
-      title: t("staff.addSuccess"),
-      description: t("staff.addSuccessMessage"),
-    })
-
     // Close the dialog and reset the form
     setDialogOpen(false)
     setNewStaff({
@@ -146,10 +139,6 @@ export function StaffTab() {
   const confirmDeleteStaff = async () => {
     if (staffToDelete) {
       await doDeleteStaff(staffToDelete)
-      toast({
-        title: t("staff.deleteSuccess"),
-        description: t("staff.deleteSuccessMessage"),
-      })
       setConfirmDeleteDialogOpen(false)
       setStaffToDelete(null)
     }
@@ -163,10 +152,6 @@ export function StaffTab() {
   const confirmUpdateStatus = async (newStatus: string) => {
     if (staffToUpdateStatus) {
       await doUpdateStaff(staffToUpdateStatus.id, { status: newStatus })
-      toast({
-        title: t("staff.statusUpdateSuccess"),
-        description: t("staff.statusUpdateSuccessMessage"),
-      })
       setStatusDialogOpen(false)
       setStaffToUpdateStatus(null)
     }
@@ -448,40 +433,6 @@ export function StaffTab() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("staff.viewProfile"),
-                                  description: `${t("staff.viewingProfile")} ${member.name}`,
-                                })
-                              }
-                            >
-                              {t("staff.viewProfile")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("staff.editDetails"),
-                                  description: `${t("staff.editingDetails")} ${member.name}`,
-                                })
-                              }
-                            >
-                              {t("staff.editDetails")}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleUpdateStatus(member.id, member.name, member.status)}>
-                              {t("staff.changeStatus")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("staff.schedule"),
-                                  description: `${t("staff.viewingSchedule")} ${member.name}`,
-                                })
-                              }
-                            >
-                              {t("staff.schedule")}
-                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteStaff(member.id)}>
                               {t("staff.deleteStaff")}

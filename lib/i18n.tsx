@@ -301,6 +301,9 @@ export const translations: Record<Locale, Translations> = {
       addNewSample: "Add New Sample",
       addNewSampleDescription: "Enter sample details to add a new sample to the system.",
     },
+    prescriptions: {
+      title: "Prescriptions",
+    },
     settings: {
       title: "Settings",
       general: "General",

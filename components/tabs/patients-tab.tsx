@@ -32,7 +32,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { useI18n } from "@/lib/i18n"
-import { useToast } from "@/hooks/use-toast"
 import useAsyncArray from "@/hooks/use-asyncarray"
 import { addPatient, deletePatient, getPatients } from "@/actions/patient-actions"
 import { useDatabase } from "@/lib/database"
@@ -41,7 +40,6 @@ import { Patient } from "@/lib/database/types"
 
 export function PatientsTab() {
   const { t } = useI18n()
-  const { toast } = useToast()
   const database = useDatabase()
   const [searchTerm, setSearchTerm] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -106,11 +104,6 @@ export function PatientsTab() {
       // Add the patient to the database
       await database.doAddPatient(patient, newPatient.password)
 
-      toast({
-        title: t("patients.addSuccess"),
-        description: t("patients.addSuccessMessage"),
-      })
-
       // Close the dialog and reset the form
       setDialogOpen(false)
       setNewPatient({
@@ -127,11 +120,6 @@ export function PatientsTab() {
       })
     } catch (error) {
       console.error("Error adding patient:", error)
-      toast({
-        title: t("patients.addError"),
-        description: t("patients.addErrorMessage"),
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }
@@ -145,10 +133,6 @@ export function PatientsTab() {
   const confirmDeletePatient = async () => {
     if (patientToDelete) {
       await database.doDeletePatient(patientToDelete)
-      toast({
-        title: t("patients.deleteSuccess"),
-        description: t("patients.deleteSuccessMessage"),
-      })
       setConfirmDeleteDialogOpen(false)
       setPatientToDelete(null)
     }
@@ -398,48 +382,6 @@ export function PatientsTab() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-[180px]">
                             <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("patients.viewDetails"),
-                                  description: `${t("patients.viewingDetails")} ${patient.name}`,
-                                })
-                              }
-                            >
-                              {t("patients.viewDetails")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("patients.editPatient"),
-                                  description: `${t("patients.editingPatient")} ${patient.name}`,
-                                })
-                              }
-                            >
-                              {t("patients.editPatient")}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("patients.medicalHistory"),
-                                  description: `${t("patients.viewingMedicalHistory")} ${patient.name}`,
-                                })
-                              }
-                            >
-                              {t("patients.medicalHistory")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: t("patients.scheduleAppointment"),
-                                  description: `${t("patients.schedulingAppointment")} ${patient.name}`,
-                                })
-                              }
-                            >
-                              {t("patients.scheduleAppointment")}
-                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => handleDeletePatient(patient.id)}>
                               {t("patients.deletePatient")}

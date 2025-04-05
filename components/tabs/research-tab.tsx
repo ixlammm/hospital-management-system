@@ -21,7 +21,7 @@ import DialogTextarea from "../inputs/textarea-input"
 
 export function ResearchTab() {
     const { t } = useI18n()
-    const searchState = useState("")
+    const searchState = useNamedState("")
     const database = useDatabase()
     const initialState: Research = {
         date: new Date(),

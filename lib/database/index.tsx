@@ -7,7 +7,7 @@ import useAsyncArray from "@/hooks/use-asyncarray";
 import { Analysis, Appointment, Archive, Invoice, MonthlyReport, Patient, Prescription, Radio, Research, Sample, Staff } from "./types";
 import { addPrescription, deletePrescription, getPrescriptions, updatePrescription } from "@/actions/prescription-actions";
 import { addSample, deleteSample, getSamples } from "@/actions/sample-actions";
-import { addRadio, deleteRadio, getRadios } from "@/actions/radio-actions";
+import { addRadio, deleteRadio, getRadios, updateRadio } from "@/actions/radio-actions";
 import { createContext, useContext } from "react";
 import { addAnalysis, deleteAnalysis, getAnalyses } from "@/actions/analysis-actions";
 import { addMonthlyReport, deleteMonthlyReport, getMonthlyReports } from "@/actions/report-actions";
@@ -190,6 +190,18 @@ function getDatabase() {
     }
   }
 
+  async function doUpdateRadio(id: string, radio: Partial<Radio>) {
+    try {
+      const r = await updateRadio(id, radio)
+      if (r)
+        radios.setData((prev) => prev.map((p) => p.id == id ? {
+          ...p, ...r
+        } : p))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   async function doAddAnalysis(analysis: Analysis) {
     try {
       const r = await addAnalysis(analysis)
@@ -312,6 +324,7 @@ function getDatabase() {
     radios,
     doAddRadio,
     doDeleteRadio,
+    doUpdateRadio,
     analyses,
     doAddAnalysis,
     doDeleteAnalysis,
