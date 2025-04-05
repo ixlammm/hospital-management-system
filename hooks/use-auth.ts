@@ -11,7 +11,7 @@ export function useAuth() {
         if (result.error) {
             throw new Error("Invalid credentials.")
         }
-        router.push("/dashboard")
+        router.push("/dashboard/overview")
     })
     const logout = useAction(async () => {
         await signout()

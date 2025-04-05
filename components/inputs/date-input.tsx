@@ -4,21 +4,20 @@ import { useState } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import useNamedState from "@/hooks/use-namedstate";
+import moment from "moment";
 
-export default function DialogNumberInput<T extends { [key: string]: any }>(props: {
+export default function DialogDateInput<T extends { [key: string]: any }>(props: {
     state: ReturnType<typeof useNamedState<T>>,
     name: string & keyof T,
     title: string,
-    min?: number,
-    max?: number,
 }) {
 
     return <div className="grow space-y-2">
         <Label htmlFor={props.name}>{props.title}</Label>
-        <Input id={props.name} type="number" min={props.min ?? 0} max={props.max ?? 100} value={props.state.value[props.name]} onChange={(e) => {
+        <Input id={props.name} type="date" value={moment(props.state.value[props.name]).format("YYYY-MM-DD")} onChange={(e) => {
             props.state.update((prev) => ({
                 ...prev,
-                [props.name]: parseInt(e.target.value) || 0,
+                [props.name]: moment(e.target.value).toDate(),
             }))
         }} />
     </div>

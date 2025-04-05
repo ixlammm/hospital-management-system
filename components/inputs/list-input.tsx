@@ -15,7 +15,7 @@ export default function DialogListInput<T extends { [key: string]: any }>(props:
   options: { key: string, label: string }[],
   placeholder?: string
 }) {
-  return <div className="space-y-2">
+  return <div className="grow space-y-2">
     <Label htmlFor={props.name}>{props.title}</Label>
     <Select defaultValue={props.options[0].key} onValueChange={(value) => {
       props.state.update((prev) => ({
@@ -23,7 +23,7 @@ export default function DialogListInput<T extends { [key: string]: any }>(props:
         [props.name]: value
       }))
     }}>
-      <SelectTrigger>
+      <SelectTrigger className="grow w-full">
         <SelectValue placeholder={props.placeholder ?? 'Select Value'} />
       </SelectTrigger>
       <SelectContent>

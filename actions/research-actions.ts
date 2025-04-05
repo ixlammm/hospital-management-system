@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { Research } from "@/lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getResearches() {
-    const session = await requireAuth()
+export const getResearches = authWrapper(async (session) => {
     return await prisma.research.findMany({
         include: {
             staff: {
@@ -16,7 +16,7 @@ export async function getResearches() {
             },
         }
     })
-}
+})
 
 export async function addResearch(research: Research) {
     await requireAuth()

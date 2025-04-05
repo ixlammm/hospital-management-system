@@ -42,15 +42,17 @@ import { getAppointments } from "@/actions/appointments-actions"
 import moment from "moment"
 import { useSession } from "next-auth/react"
 import dynamic from "next/dynamic"
-
-function formatRelativeDate(date: Date) {
-  return moment(date).calendar(null, {
-    sameDay: "[Today]",
-    nextDay: "[Tomorrow]",
-    nextWeek: "dddd", // Example: "Thursday"
-    sameElse: "MMMM YYYY", // Example: "April 2025"
-  });
-}
+import DialogUpdate, { useUpdateDialog } from "../inputs/update-dialog"
+import { Appointment } from "@/lib/database/types"
+import DialogDateInput from "../inputs/date-input"
+import useNamedState from "@/hooks/use-namedstate"
+import { DialogRow } from "../inputs/dialog-layout"
+import SelectPatient from "../inputs/select-patient"
+import SelectDoctor from "../inputs/select-doctor"
+import DialogTimeInput from "../inputs/time-input"
+import DialogListInput from "../inputs/list-input"
+import DialogTextarea from "../inputs/textarea-input"
+import DialogAdd, { useAddDialog } from "../inputs/add-dialog"
 
 export function AppointmentsTab() {
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -58,93 +60,88 @@ export function AppointmentsTab() {
   const { t } = useI18n()
   const database = useDatabase()
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false)
-  const [appToDelete, setAppToDelete] = useState<string | null>(null)
+  const [selectedApp, setSelectedApp] = useState<string | null>(null)
   const [appointments, setAppointments] = useState<any[]>([])
   const session = useSession()
-
-  useEffect(() => {
-    (async () => {
-      const formatedDate = moment(date).format("YYYY-MM-DD")
-      const filterDate = moment.utc(formatedDate).toDate()
-      const appointments = await getAppointments(filterDate)
-      setAppointments(appointments)
-      setNewAppointment((prev) => ({
-        ...prev,
-        date: formatedDate,
-      }))
-    })()
-  }, [date])
-
-  const [newAppointment, setNewAppointment] = useState({
+  const initialState: Appointment = {
     patientId: "",
     doctorId: "",
-    date: date?.toISOString(),
+    date: date ?? new Date(),
     time: "09:00",
     duration: "30",
     type: "check-up",
     notes: "",
+    description: "",
     status: ""
-  })
+  }
+
+  const app = useNamedState(initialState)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     console.log(id, value)
-    setNewAppointment((prev) => ({
+    app.update((prev) => ({
       ...prev,
       [id]: value,
     }))
   }
 
   const handleSelectChange = (field: string, value: string) => {
-    setNewAppointment((prev) => ({
+    app.update((prev) => ({
       ...prev,
       [field]: value,
     }))
   }
 
+  const handleEditAppointment = (id: string) => {
+    setSelectedApp(id)
+    const appointment = database.appointments.data.find((app) => app.id === id)
+    if (appointment) {
+      app.update({
+        ...appointment,
+        date: moment(appointment.date).toDate(),
+        time: appointment.time,
+      })
+      updateDialog.setOpen(true)
+    }
+  }
+
   const handleCancelAppointment = (id: string) => {
-    setAppToDelete(id)
+    setSelectedApp(id)
     setConfirmDeleteDialogOpen(true)
   }
 
   const handleAddAppointment = async () => {
     // Here you would typically send this data to your backend
-    console.log("Adding new appointment:", newAppointment)
+    console.log("Adding new appointment:", app.value)
 
     await database.doAddAppointment({
-      ...newAppointment,
-      date: new Date(newAppointment.date ?? ""),
+      ...app.value,
+      date: new Date(app.value.date ?? ""),
     })
 
     // For demo purposes, we'll just close the dialog
     setDialogOpen(false)
 
     // Reset the form
-    setNewAppointment({
-      patientId: "",
-      doctorId: "",
-      date: "",
-      time: "09:00",
-      duration: "30",
-      type: "check-up",
-      notes: "",
-      status: "Scheduled"
-    })
+    app.update(initialState)
   }
 
   const confirmDeleteAppointment = async () => {
-    if (appToDelete) {
-      await database.doDeleteAppointment(appToDelete)
+    if (selectedApp) {
+      await database.doDeleteAppointment(selectedApp)
       toast({
         title: t("patients.deleteSuccess"),
         description: t("patients.deleteSuccessMessage"),
       })
       setConfirmDeleteDialogOpen(false)
-      setAppToDelete(null)
+      setSelectedApp(null)
     }
   }
 
   const formattedDate = date ? format(date, "MMMM d, yyyy") : ""
+  const updateDialog = useUpdateDialog()
+  const addDialog = useAddDialog()
 
   return (
     <div className="space-y-6">
@@ -155,123 +152,149 @@ export function AppointmentsTab() {
         </div>
         {
           session.status == "authenticated" && (session.data.user.role == "admin" || session.data.user.role == "reception") &&
-
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Appointment</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Schedule New Appointment</DialogTitle>
-                <DialogDescription>Enter appointment details to schedule a new patient appointment.</DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col gap-4 py-2">
-                <div className="flex flex-col gap-4">
-                  <Label htmlFor="patientId">{t("appointments.selectPatient")}</Label>
-                  <Select
-                    defaultValue="Select a patient"
-                    value={newAppointment.patientId}
-                    onValueChange={(value) => handleSelectChange("patientId", value)}
-                  >
-                    <SelectTrigger id="patientId">
-                      <SelectValue placeholder="Select a patient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {database.patients.data.map((patient) => (
-                        <SelectItem key={patient.id} value={patient.id}>
-                          {patient.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <Label htmlFor="doctorId">{t("appointments.selectDoctor")}</Label>
-                  <Select
-                    defaultValue="Select a doctor"
-                    value={newAppointment.doctorId}
-                    onValueChange={(value) => handleSelectChange("doctorId", value)}
-                  >
-                    <SelectTrigger id="doctorId">
-                      <SelectValue placeholder="Select a patient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {database.staff.data.map((staff) => (
-                        <SelectItem key={staff.id} value={staff.id}>
-                          {staff.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">{t("appointments.date")}</Label>
-                    <Input id="date" type="date" value={newAppointment.date} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="time">{t("appointments.time")}</Label>
-                    <Input id="time" type="time" value={newAppointment.time} onChange={handleInputChange} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">{t("appointments.duration")}</Label>
-                    <Select
-                      value={newAppointment.duration}
-                      onValueChange={(value) => handleSelectChange("duration", value)}
-                    >
-                      <SelectTrigger id="duration">
-                        <SelectValue placeholder="Select duration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="15">15 {t("appointments.minutes")}</SelectItem>
-                        <SelectItem value="30">30 {t("appointments.minutes")}</SelectItem>
-                        <SelectItem value="45">45 {t("appointments.minutes")}</SelectItem>
-                        <SelectItem value="60">60 {t("appointments.minutes")}</SelectItem>
-                        <SelectItem value="90">90 {t("appointments.minutes")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="type">{t("appointments.type")}</Label>
-                    <Select value={newAppointment.type} onValueChange={(value) => handleSelectChange("type", value)}>
-                      <SelectTrigger id="type">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="check-up">{t("appointments.checkup")}</SelectItem>
-                        <SelectItem value="consultation">{t("appointments.consultation")}</SelectItem>
-                        <SelectItem value="follow-up">{t("appointments.followup")}</SelectItem>
-                        <SelectItem value="emergency">{t("appointments.emergency")}</SelectItem>
-                        <SelectItem value="procedure">{t("appointments.procedure")}</SelectItem>
-                        <SelectItem value="surgery">{t("appointments.surgery")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">{t("appointments.notes")}</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Enter any additional notes"
-                    value={newAppointment.notes}
-                    onChange={handleInputChange}
-                    className="min-h-[80px]"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  {t("common.cancel")}
-                </Button>
-                <Button onClick={handleAddAppointment}>{t("appointments.scheduleNew")}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <>
+            <DialogUpdate
+              description="Update appointment details"
+              dialog={updateDialog}
+              handleUpdate={async () => {
+                if (selectedApp) {
+                  await database.doUpdateAppointment(selectedApp, app.value)
+                }
+              }}
+              title="Update Appointment"
+              updateText="Update Appointment"
+              hideTrigger
+            >
+              <DialogRow>
+                <SelectPatient
+                  state={app}
+                />
+                <SelectDoctor
+                  state={app}
+                />
+              </DialogRow>
+              <DialogRow>
+                <DialogDateInput
+                  state={app}
+                  name="date"
+                  title={t("appointments.date")}
+                />
+                <DialogTimeInput
+                  state={app}
+                  name="time"
+                  title={t("appointments.time")}
+                />
+              </DialogRow>
+              <DialogRow>
+                <DialogListInput
+                  state={app}
+                  name="type"
+                  title={t("appointments.type")}
+                  options={[
+                    { key: "check-up", label: t("appointments.checkup") },
+                    { key: "consultation", label: t("appointments.consultation") },
+                    { key: "follow-up", label: t("appointments.followup") },
+                    { key: "emergency", label: t("appointments.emergency") },
+                    { key: "procedure", label: t("appointments.procedure") },
+                    { key: "surgery", label: t("appointments.surgery") },
+                  ]}
+                />
+                <DialogListInput
+                  state={app}
+                  name="duration"
+                  title={t("appointments.duration")}
+                  options={[
+                    { key: "15", label: "15 minutes" },
+                    { key: "30", label: "30 minutes" },
+                    { key: "45", label: "45 minutes" },
+                    { key: "60", label: "60 minutes" },
+                    { key: "90", label: "90 minutes" },
+                  ]}
+                />
+              </DialogRow>
+              <DialogTextarea
+                state={app}
+                name="description"
+                title={t("appointments.description")}
+                placeholder="Enter description"
+              />
+              <DialogTextarea
+                state={app}
+                name="notes"
+                title={t("appointments.notes")}
+                placeholder="Enter any additional notes"
+              />
+            </DialogUpdate>
+            <DialogAdd
+              description="Add new appointment"
+              dialog={addDialog}
+              handleAdd={async () => {
+                await database.doAddAppointment(app.value)
+              }}
+              title="Add Appointment"
+              addText="New Appointment"
+            >
+              <DialogRow>
+                <SelectPatient
+                  state={app}
+                />
+                <SelectDoctor
+                  state={app}
+                />
+              </DialogRow>
+              <DialogRow>
+                <DialogDateInput
+                  state={app}
+                  name="date"
+                  title={t("appointments.date")}
+                />
+                <DialogTimeInput
+                  state={app}
+                  name="time"
+                  title={t("appointments.time")}
+                />
+              </DialogRow>
+              <DialogRow>
+                <DialogListInput
+                  state={app}
+                  name="type"
+                  title={t("appointments.type")}
+                  options={[
+                    { key: "check-up", label: t("appointments.checkup") },
+                    { key: "consultation", label: t("appointments.consultation") },
+                    { key: "follow-up", label: t("appointments.followup") },
+                    { key: "emergency", label: t("appointments.emergency") },
+                    { key: "procedure", label: t("appointments.procedure") },
+                    { key: "surgery", label: t("appointments.surgery") },
+                  ]}
+                />
+                <DialogListInput
+                  state={app}
+                  name="duration"
+                  title={t("appointments.duration")}
+                  options={[
+                    { key: "15", label: "15 minutes" },
+                    { key: "30", label: "30 minutes" },
+                    { key: "45", label: "45 minutes" },
+                    { key: "60", label: "60 minutes" },
+                    { key: "90", label: "90 minutes" },
+                  ]}
+                />
+              </DialogRow>
+              <DialogTextarea
+                state={app}
+                name="description"
+                title={t("appointments.description")}
+                placeholder="Enter description"
+              />
+              <DialogTextarea
+                state={app}
+                name="notes"
+                title={t("appointments.notes")}
+                placeholder="Enter any additional notes"
+              />
+            </DialogAdd>
+          </>
         }
       </div>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
@@ -292,25 +315,30 @@ export function AppointmentsTab() {
             <CardContent className="px-4 pb-4">
               <div className="space-y-4">
                 {
-                  database.appointments.data.filter(x => x.date > new Date()).sort((a, b) => a.date.getSeconds() - b.date.getSeconds()).slice(0, 3).map((appointment) => {
-                    const time = moment(appointment.time, "hh:mm")
-                    appointment.date.setHours(time.hours(), time.minutes())
-                    return (
-                      <div key={appointment.id} className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                          <Clock className="h-5 w-5 text-primary" />
+                  database.appointments.loading ?
+                    <div className="flex items-center justify-center">
+                      <p className="py-10 text-sm text-muted-foreground">Loading...</p>
+                    </div>
+                    :
+                    database.appointments.data.filter(x => x.date > new Date()).sort((a, b) => a.date.getSeconds() - b.date.getSeconds()).slice(0, 3).map((appointment) => {
+                      const time = moment(appointment.time, "hh:mm")
+                      appointment.date.setHours(time.hours(), time.minutes())
+                      return (
+                        <div key={appointment.id} className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                            <Clock className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-medium">
+                              {appointment.staff.name} - {appointment.type}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              <Moment fromNow date={appointment.date} />
+                            </p>
+                          </div>
                         </div>
-                        <div className="space-y-0.5">
-                          <p className="text-sm font-medium">
-                            {appointment.staff.name} - {appointment.type}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            <Moment fromNow date={appointment.date} />
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })
+                      )
+                    })
                 }
               </div>
             </CardContent>
@@ -348,55 +376,64 @@ export function AppointmentsTab() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="space-y-2 p-4 pt-0">
-              {appointments.map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                      <Clock className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-medium">{appointment.time}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {appointment.type}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 rounded-lg border shadow-xs p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/doctor.png" alt={appointment.patientId} />
-                      </Avatar>
-                      <div>
-                        <div className="text-xs text-muted-foreground">With <b>{appointment.patient.name}</b></div>
-                      </div>
-                    </div>
-                    <div className="hidden md:block text-sm">
-                      <div className="font-medium">{appointment.notes}</div>
-                    </div>
-                    <Badge className="ml-auto" variant="outline">{appointment.status}</Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View details</DropdownMenuItem>
-                        <DropdownMenuItem>Reschedule</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleCancelAppointment(appointment.id)}>Cancel appointment</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+            {
+              database.appointments.loading ?
+                <div className="grow flex items-center justify-center">
+                  <span>Loading ...</span>
                 </div>
-              ))}
-            </div>
+                :
+                <div className="space-y-2 p-4 pt-0">
+                  {database.appointments.data.filter((p) => moment(p.date).format("YYYY-MM-DD") == moment(date).format("YYYY-MM-DD")).map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                          <Clock className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{appointment.time}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {appointment.type}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 rounded-lg border shadow-xs p-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src="/doctor.png" alt={appointment.patientId} />
+                          </Avatar>
+                          <div>
+                            <div className="text-xs text-muted-foreground">With <b>{appointment.patient.name}</b></div>
+                          </div>
+                        </div>
+                        <div className="hidden md:block text-sm">
+                          <div className="font-medium">{appointment.notes}</div>
+                        </div>
+                        <div className="hidden md:block text-sm">
+                          <div className="font-medium">{appointment.description}</div>
+                        </div>
+                        <Badge className="ml-auto" variant="outline">{appointment.type}</Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleEditAppointment(appointment.id)}>Edit appointment</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCancelAppointment(appointment.id)}>Cancel appointment</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+            }
           </CardContent>
         </Card>
       </div>

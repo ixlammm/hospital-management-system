@@ -77,10 +77,6 @@ export function DashboardHeader({ activeTab, navigationItems }: DashboardHeaderP
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{session.status == "authenticated" && session.data.user?.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profil</DropdownMenuItem>
-              <DropdownMenuItem>Paramètres</DropdownMenuItem>
-              <DropdownMenuItem>Aide</DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={auth.logout.run}>
                 {auth.logout.loading && <Loader2 className="animate-spin"/>}
                 Déconnexion

@@ -37,6 +37,7 @@ import useAsyncArray from "@/hooks/use-asyncarray"
 import { addPatient, deletePatient, getPatients } from "@/actions/patient-actions"
 import { useDatabase } from "@/lib/database"
 import { Skeleton } from "../ui/skeleton"
+import { Patient } from "@/lib/database/types"
 
 export function PatientsTab() {
   const { t } = useI18n()
@@ -167,7 +168,7 @@ export function PatientsTab() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold tracking-tight">{t("staff.title")}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("patients.title")}</h2>
           <Badge variant="outline" className="ml-2">
             {database.patients.data.length} {t("common.total")}
           </Badge>
@@ -236,10 +237,6 @@ export function PatientsTab() {
                         <RadioGroupItem value="male" id="male" />
                         <Label htmlFor="male">{t("patients.male")}</Label>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="other" id="other" />
-                        <Label htmlFor="other">{t("patients.other")}</Label>
-                      </div>
                     </RadioGroup>
                   </div>
                   <div className="space-y-2">
@@ -267,7 +264,7 @@ export function PatientsTab() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">{t("patients.email")}</Label>
+                    <Label htmlFor="email">{t("common.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -278,7 +275,7 @@ export function PatientsTab() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">{t("staff.password")}</Label>
+                  <Label htmlFor="password">{t("common.password")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -288,7 +285,7 @@ export function PatientsTab() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">{t("patients.address")}</Label>
+                  <Label htmlFor="address">{t("common.address")}</Label>
                   <Input
                     id="address"
                     placeholder="Street address"

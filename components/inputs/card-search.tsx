@@ -3,8 +3,9 @@ import { CardHeader } from "../ui/card";
 import { Input } from "../ui/input";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
+import useNamedState from "@/hooks/use-namedstate";
 
-export default function CardSearchHeader({ searchState }: { searchState: [string, (value: string) => void] }) {
+export default function CardSearchHeader({ searchState }: { searchState: ReturnType<typeof useNamedState<string>> }) {
     const { t } = useI18n()
 
     return (
@@ -16,8 +17,8 @@ export default function CardSearchHeader({ searchState }: { searchState: [string
                         type="search"
                         placeholder={t("common.search")}
                         className="w-full pl-10 border-gray-200 bg-[#F9FAFB]"
-                        value={searchState[0]}
-                        onChange={(e) => searchState[1](e.target.value)}
+                        value={searchState.value}
+                        onChange={(e) => searchState.update(e.target.value)}
                     />
                 </div>
             </div>

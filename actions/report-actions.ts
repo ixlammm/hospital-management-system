@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { MonthlyReport } from "@/lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getMonthlyReports() {
-    const session = await requireAuth()
+export const getMonthlyReports = authWrapper(async (session) => {
     return await prisma.monthlyReport.findMany({
         include: {
             staff: {
@@ -16,7 +16,7 @@ export async function getMonthlyReports() {
             },
         }
     })
-}
+})
 
 export async function addMonthlyReport(monthlyReport: MonthlyReport) {
     await requireAuth()

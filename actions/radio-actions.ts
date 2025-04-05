@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { Radio } from "../lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getRadios() {
-  const session = await requireAuth()
+export const getRadios = authWrapper(async (session) => {
   return await prisma.radio.findMany({
     include: {
       patient: {
@@ -21,7 +21,7 @@ export async function getRadios() {
       },
     }
   })
-}
+})
 
 export async function addRadio(radio:Radio) {
   await requireAuth()

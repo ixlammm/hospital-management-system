@@ -5,13 +5,19 @@ import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { Patient } from "@/lib/database/types"
 import { saltAndHashPassword } from "@/lib/password"
+import { IBE } from "@/crypt/ibe"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getPatients() {
-  const session = await requireAuth()
+export const getPatients = authWrapper(async (session)  =>{
   console.log("GET PATIENTS")
   console.log(session)
   if (session.role == "admin" || session.role == "reception")
-    return await prisma.patient.findMany()
+    return await prisma.patient.findMany({
+      omit: {
+        ibe_a: true,
+        ibe_r: true,
+      }
+    })
   else {
     return (await prisma.user.findUnique({
       where: {
@@ -27,10 +33,10 @@ export async function getPatients() {
             }
           }
         }
-      }
+      },
     }))?.staff?.appointments.map((a) => a.patient) || []
   }
-}
+})
 
 export async function addPatient({ patient, password} : { patient: Patient, password: string }) {
   await requireAuth()
@@ -42,10 +48,18 @@ export async function addPatient({ patient, password} : { patient: Patient, pass
         role: "patient",
       }
     })
-    return await tx.patient.create({
+    const newPatient = await tx.patient.create({
       data: {
         ...patient,
         userId: user.id,
+      },
+    })
+    const keys = await IBE.genererCles("PATIENT", newPatient.id)
+    return await tx.patient.update({
+      where: { id: newPatient.id },
+      data: {
+        ibe_a: keys.a,
+        ibe_r: keys.r,
       },
     })
   })

@@ -3,9 +3,9 @@
 import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Archive } from "@/lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getArchives() {
-    const session = await requireAuth()
+export const getArchives = authWrapper(async (session) => {
     return await prisma.archive.findMany({
         include: {
             patient: {
@@ -15,7 +15,7 @@ export async function getArchives() {
             },
         }
     })
-}
+})
 
 export async function addArchive(archive: Archive) {
     await requireAuth()

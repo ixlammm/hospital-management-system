@@ -1,6 +1,6 @@
 "use client"
 
-import { addAppointment, deleteAppointment, getAppointments } from "@/actions/appointments-actions";
+import { addAppointment, deleteAppointment, getAppointments, updateAppointment } from "@/actions/appointments-actions";
 import { addPatient, deletePatient, getPatients } from "@/actions/patient-actions";
 import { addStaff, deleteStaff, getStaff, updateStaff } from "@/actions/staff-actions";
 import useAsyncArray from "@/hooks/use-asyncarray";
@@ -90,7 +90,7 @@ function getDatabase() {
     try {
       const r = await addAppointment(appointment)
       if (r)
-        appointments.setData((prev) => [r, ...prev])
+        appointments.setData((prev) => [r, ...prev as any])
     } catch (e) {
       console.error(e)
     }
@@ -102,6 +102,18 @@ function getDatabase() {
       if (r)
         appointments.setData((prev) => prev.filter((a) => a.id !== id))
 
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function doUpdateAppointment(id: string, appointment: Partial<Appointment>) {
+    try {
+      const r = await updateAppointment(id, appointment)
+      if (r)
+        appointments.setData((prev) => prev.map((a) => (a.id === id ? {
+          ...a, ...r as any
+        } : a)))
     } catch (e) {
       console.error(e)
     }
@@ -289,6 +301,7 @@ function getDatabase() {
     appointments,
     doAddAppointment,
     doDeleteAppointment,
+    doUpdateAppointment,
     prescriptions,
     doAddPrescription,
     doDeletePrescription,

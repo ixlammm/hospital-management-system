@@ -6,16 +6,16 @@ export default function useAsyncArray<T>(af: () => Promise<T[] | undefined>) {
 
     useEffect(() => {
         startTransition(async () => {
-            try {
-                const data = await af()
+            af().then((data) => {
                 if (data) {
                     setData(data)
                 }
-            } catch (error) {
-                console.error(error)
             }
+            ).catch((error) => {
+                console.log("ERRROR")
+            })
         })
-    }, [])
+}, [])
 
-    return { data, setData, loading }
+return { data, setData, loading }
 }

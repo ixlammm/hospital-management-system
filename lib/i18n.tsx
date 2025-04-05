@@ -61,6 +61,9 @@ export const translations: Record<Locale, Translations> = {
       changingPassword: "Changing password...",
       password: "Password",
       confirmPassword: "Confirm Password",
+      observation: "Observation",
+      email: "Email",
+      address: "Address"
     },
     navigation: {
       overview: "Overview",
@@ -230,6 +233,9 @@ export const translations: Record<Locale, Translations> = {
       reschedule: "Reschedule",
       cancelAppointment: "Cancel appointment",
       minutes: "minutes",
+      selectPatient: "Select patient",
+      selectDoctor: "Select doctor",
+      description: "Description",
     },
     rooms: {
       title: "Rooms & Beds",
@@ -288,6 +294,12 @@ export const translations: Record<Locale, Translations> = {
       addInvoice: "Add Invoice",
       addNewInvoice: "Add New Invoice",
       addNewInvoiceDescription: "Enter invoice details to add a new invoice to the system.",
+    },
+    samples: {
+      title: "Samples",
+      addSample: "Add Sample",
+      addNewSample: "Add New Sample",
+      addNewSampleDescription: "Enter sample details to add a new sample to the system.",
     },
     settings: {
       title: "Settings",

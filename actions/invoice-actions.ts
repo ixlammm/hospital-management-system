@@ -3,9 +3,9 @@
 import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Invoice } from "@/lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getInvoices() {
-    const session = await requireAuth()
+export const getInvoices = authWrapper(async (session) => {
     return await prisma.invoice.findMany({
         include: {
             staff: {
@@ -20,7 +20,7 @@ export async function getInvoices() {
             },
         }
     })
-}
+})
 
 export async function addInvoice(invoice: Invoice) {
     await requireAuth()

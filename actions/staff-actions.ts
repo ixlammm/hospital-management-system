@@ -5,9 +5,9 @@ import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { saltAndHashPassword } from "@/lib/password"
 import { Staff } from "@/lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getStaff() {
-  const session = await requireAuth()
+export const getStaff = authWrapper(async (session) => {
   if (session.role == "admin" || session.role == "reception")
     return await prisma.staff.findMany()
   else {
@@ -24,7 +24,7 @@ export async function getStaff() {
     }
     return []
   }
-}
+})
 
 export async function addStaff({ staff, password }: { staff: Staff, password: string }) {
   await requireAuth()

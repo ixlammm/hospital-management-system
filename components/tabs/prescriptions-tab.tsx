@@ -21,7 +21,7 @@ import DialogTextarea from "../inputs/textarea-input"
 
 export function PrescriptionsTab() {
     const { t } = useI18n()
-    const searchState = useState("")
+    const searchState = useNamedState("")
     const database = useDatabase()
     const initialState: Prescription = {
         date: new Date(),

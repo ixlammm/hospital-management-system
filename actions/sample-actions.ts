@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma"
 import { requireAuth } from "./auth-actions"
 import { Prisma } from "@prisma/client"
 import { Sample } from "../lib/database/types"
+import { authWrapper } from "./auth-wrapper"
 
-export async function getSamples() {
-  const session = await requireAuth()
+export const getSamples = authWrapper(async (session) => {
   return await prisma.sample.findMany({
     include: {
       patient: {
@@ -21,7 +21,7 @@ export async function getSamples() {
       },
     }
   })
-}
+})
 
 export async function addSample(sample:Sample) {
   await requireAuth()

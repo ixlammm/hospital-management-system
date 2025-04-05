@@ -33,10 +33,9 @@ interface DashboardSidebarProps {
     id: string;
   }[];
   activeTab: string;
-  setActiveTab: (tab: string) => void;
 }
 
-export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: DashboardSidebarProps) {
+export function DashboardSidebar({ navigationItems, activeTab }: DashboardSidebarProps) {
   const { t } = useI18n();
   const sidebar = useSidebar()
 
@@ -53,12 +52,12 @@ export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: D
         DASHBOARD:
           role === "admin" ? ["overview", "patients", "staff", "appointments", "prescriptions", "samples", "radio", "analysis", "research", "invoice", "settings"] :
             role == "medecin" ? ["overview", "patients", "appointments", "prescriptions", "research", "radio", "settings"] :
-            role == "reception" ? ["overview", "patients", "appointments", "settings"] :
-            role == "infirmier" ? ["overview", "patients", "appointments", "samples", "settings"] :
-            role == "radiologue" ? ["overview", "patients", "appointments", "radio", "settings"] :
-            role == "laborantin" ? ["overview", "analysis", "settings"] : 
-            role == "comptable" ? ["overview", "invoice", "reports", "settings"] : 
-            role == "patient" ? ["overview", "prescriptions", "invoice", "settings"] : []
+              role == "reception" ? ["overview", "patients", "appointments", "settings"] :
+                role == "infirmier" ? ["overview", "patients", "appointments", "samples", "settings"] :
+                  role == "radiologue" ? ["overview", "patients", "appointments", "radio", "settings"] :
+                    role == "laborantin" ? ["overview", "analysis", "settings"] :
+                      role == "comptable" ? ["overview", "invoice", "reports", "settings"] :
+                        role == "patient" ? ["overview", "prescriptions", "invoice", "settings"] : []
       };
       setGroupedItems(groupedItems);
     }
@@ -111,11 +110,13 @@ export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: D
                             <SidebarMenuButton
                               data-active={isActive}
                               className="gap-2"
-                              onClick={() => setActiveTab(item.id)}>
-                              <Icon className="h-5 w-5" />
-                              <span>
-                                {t(`navigation.${item.id}`)}
-                              </span>
+                              asChild>
+                              <Link href={`/dashboard/${item.id}`}>
+                                <Icon className="h-5 w-5" />
+                                <span>
+                                  {t(`navigation.${item.id}`)}
+                                </span>
+                              </Link>
                             </SidebarMenuButton>
                           </TooltipHint>
                         </SidebarMenuItem>
@@ -125,7 +126,7 @@ export function DashboardSidebar({ navigationItems, activeTab, setActiveTab }: D
                     session.status == "loading" && new Array(4).fill(0).map((_, i) => (
                       <SidebarMenuItem key={i}>
                         <SidebarMenuButton disabled variant={"outline"} asChild>
-                          <Skeleton className="bg-gray-300"/>
+                          <Skeleton className="bg-gray-300" />
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))

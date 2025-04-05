@@ -34,6 +34,8 @@ model Patient {
   analyses   Analysis[]
   archives   Archive[]
   invoices   Invoice[]
+  ibe_a     String?
+  ibe_r     String?
   user           User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -87,6 +89,7 @@ model Appointment {
   status      String
   type        String
   duration    String?
+  description String?
   notes       String?
 
   patient     Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -229,4 +232,10 @@ model Session {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model ibe {
+  n      String @id
+  p      String
+  q      String
 }

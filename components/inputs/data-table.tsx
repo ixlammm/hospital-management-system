@@ -9,7 +9,10 @@ import { useI18n } from "@/lib/i18n";
 import { useConfirmDeleteDialog } from "./delete-dialog";
 
 export default function DataTable<T extends { id: string }>(props: {
-    array: ReturnType<typeof useAsyncArray<T>>,
+    array: {
+        data: T[],
+        loading: boolean,
+    },
     header: string[],
     cols: RecursiveKey<T>[],
     deleteDialog: ReturnType<typeof useConfirmDeleteDialog>,
