@@ -1,17 +1,9 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import pickle
-import base64
-import json
-from dataclasses import asdict, is_dataclass
-
-# Import des classes ABE
+import hashlib
 from typing import Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 from Cryptodome.Util.number import getPrime, isPrime, getRandomRange
-import hashlib
 
 # === STRUCTURES DE DONNEES ===
 @dataclass
@@ -154,6 +146,7 @@ class CPABE:
     def decrypt(self, mpk: MasterKey, sk: UserKey, ciphertext: Dict) -> bytes:
         """Déchiffre le message si la politique est satisfaite"""
         if not self._check_policy(ciphertext['policy'], sk.attrs):
+            return "Accès refusé"
             raise ValueError("Accès refusé: les attributs ne satisfont pas la politique")
             
         # Reconstruction du secret s
@@ -284,373 +277,59 @@ class CPABE:
             'big'
         ) % self.q
 
-# Tables pour les politiques
-SERVICE_TABLES = ['AGENT', 'MEDECIN', 'INFIRMIER']
-REST_TABLES = ['PATIENT', 'RADIOLOGUE', 'COMPTABLE', 'LABORANTIN']
-ABE_TABLES = SERVICE_TABLES + REST_TABLES
-
-# Politiques statiques
-STATIC_POLICIES = {
-    ('patient', 'telephone'): ['AGENT', 'RECEPTION'],
-    ('patient', 'email'): ['AGENT', 'RECEPTION'],
-    ('patient' , 'adresse'): ['AGENT', 'RECEPTION'],
-    ('medecin', 'telephone'): ['AGENT', 'ADMINISTRATION'],
-    ('medecin', 'email'): ['AGENT', 'ADMINISTRATION'],
-    ('agent', 'telephone'): ['AGENT', 'ADMINISTRATION'],
-    ('agent', 'email'): ['AGENT', 'ADMINISTRATION'],
-    ('infirmier', 'telephone'): ['AGENT', 'ADMINISTRATION'],
-    ('infirmier', 'email'): ['AGENT', 'ADMINISTRATION'],
-    ('laborantin', 'telephone'): ['AGENT', 'ADMINISTRATION'],
-    ('laborantin', 'email'): ['AGENT', 'ADMINISTRATION'],
-    ('radiologue', 'telephone'): ['AGENT', 'ADMINISTRATION'],
-    ('radiologue', 'email'): ['AGENT', 'ADMINISTRATION'],
-    ('comptable', 'telephone'): ['AGENT', 'ADMINISTRATION'],
-    ('comptable', 'email'): [['AGENT', 'ADMINISTRATION']],
-    ('radio', 'type_radio'): [['MEDECIN'], ['RADIOLOGUE']],
-    ('radio', 'resultat'): [['MEDECIN'], ['RADIOLOGUE']],
-    ('facture', 'montant'): [['COMPTABLE'], ['PATIENT']]
-}
-
-def create_abe_policy(table_name: str, servi: str = None) -> list[str]:
-    """
-    Crée une politique ABE au format simplifié ['MEDECIN', 'CARDIOLOGIE'].
-    Vérifie si la table appartient à SERVICE_TABLES ou REST_TABLES.
-    """
-    table_name = table_name.upper()
-    
-    # Vérification de la table
-    if table_name not in ABE_TABLES:
-        raise ValueError(f"Table {table_name} non reconnue. Tables valides: {ABE_TABLES}")
-    
-    # Cas SERVICE_TABLES
-    if table_name in SERVICE_TABLES:
-        if not servi:
-            raise ValueError(f"Pour la table {table_name}, le paramètre 'servi' est requis")
-        return [table_name, servi.upper()]
-    
-    # Cas REST_TABLES (ignore servi si fourni)
-    return [table_name]
-
-def list_to_policy(policy_list: list) -> PolicyNode:
-    """Convertit une liste Python en arbre PolicyNode avec gestion explicite des groupes OR/AND"""
-    def build_node(element):
-        if isinstance(element, list):
-            # Si l'élément contient des sous-listes, créer un OR entre les groupes
-            if any(isinstance(e, list) for e in element):
-                return PolicyNode("OR", [build_group(g) for g in element])
-            # Sinon, créer un AND pour les éléments simples
-            else:
-                return PolicyNode("AND", [build_attr(e) for e in element])
-        else:
-            return build_attr(element)
-
-    def build_group(group):
-        # Un groupe est traité comme un AND, même avec un seul élément
-        if isinstance(group, list):
-            return PolicyNode("AND", [build_attr(e) for e in group])
-        return build_attr(group)
-
-    def build_attr(attr):
-        return PolicyNode("ATTR", attribute=attr.upper())
-
-    return build_node(policy_list)
-
-# Classe d'encodage JSON personnalisée pour les objets complexes
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if is_dataclass(obj):
-            return asdict(obj)
-        # Pour les bytes (comme ciphertext, iv, etc.)
-        if isinstance(obj, bytes):
-            return base64.b64encode(obj).decode('utf-8')
-        # Pour PolicyNode qui est récursif
-        if isinstance(obj, PolicyNode):
-            result = {"node_type": obj.node_type}
-            if obj.attribute:
-                result["attribute"] = obj.attribute
-            if obj.threshold:
-                result["threshold"] = obj.threshold
-            if obj.children:
-                result["children"] = obj.children
-            return result
-        return super().default(obj)
-
-# Méthodes de décodage des données sérialisées
-def decode_json(data):
-    """Convertit les structures données en objets python"""
-    # Base64 decode pour les bytes
-    for key in ['ciphertext', 'iv', 'tag']:
-        if key in data:
-            data[key] = base64.b64decode(data[key])
-    
-    # Reconstruction de PolicyNode
-    if 'policy' in data:
-        data['policy'] = decode_policy_node(data['policy'])
-        
-    return data
-
-def decode_policy_node(node_data):
-    """Reconstruit récursivement un PolicyNode depuis un dict"""
-    node_type = node_data['node_type']
-    
-    if node_type == 'ATTR':
-        return PolicyNode(node_type=node_type, attribute=node_data['attribute'])
-    
-    if node_type == 'THRESHOLD':
-        return PolicyNode(
-            node_type=node_type,
-            threshold=tuple(node_data['threshold']),
-            children=[decode_policy_node(child) for child in node_data['children']]
-        )
-    
-    # AND, OR
-    return PolicyNode(
-        node_type=node_type,
-        children=[decode_policy_node(child) for child in node_data['children']]
-    )
-
-# Initialisation de Flask
-app = Flask(__name__)
-CORS(app)  # Pour permettre les requêtes cross-origin depuis Next.js
-
-# Variables globales pour stocker les clés maîtresses
-global_cpabe = None
-global_mpk = None
-global_msk = None
-
-@app.route('/api/setup', methods=['POST'])
-def api_setup():
-    """Initialise le système ABE et génère les clés maîtresses"""
-    global global_cpabe, global_mpk, global_msk
-    
+# === EXEMPLE D'UTILISATION ===
+if __name__ == "__main__":
     try:
-        global_cpabe = CPABE(256)
-        global_mpk, global_msk = global_cpabe.setup()
+        # Initialisation
+        cpabe = CPABE(256)  # Paramètre de sécurité réduit pour les tests
         
-        # Conversion en format serialisable
-        result = {
-            'keys': {
-                'mpk': json.dumps(global_mpk, cls=CustomJSONEncoder),
-                'msk': json.dumps(global_msk, cls=CustomJSONEncoder),
-            },
-            'status': 'success',
-            'message': 'Système ABE initialisé avec succès'
-        }
+        print("Génération des clés maîtresses...")
+        mpk, msk = cpabe.setup()
         
-        # On ne retourne pas les clés directement pour des raisons de sécurité
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/keygen', methods=['POST'])
-def api_keygen():
-    """Génère une clé utilisateur basée sur ses attributs"""
-    global global_cpabe, global_mpk, global_msk
-    
-    if not all([global_cpabe, global_mpk, global_msk]):
-        return jsonify({'status': 'error', 'message': 'Système ABE non initialisé'}), 400
-    
-    try:
-        params = request.json
-        attributes = params.get('attributes', [])
+        # Politique: (A ET (B OU C))
+        policy = PolicyNode('AND', [
+            PolicyNode('ATTR', attribute='A'),
+            PolicyNode('OR', [
+                PolicyNode('ATTR', attribute='B'),
+                PolicyNode('ATTR', attribute='C')
+            ])
+        ])
         
-        if not attributes:
-            return jsonify({'status': 'error', 'message': 'Attributs requis'}), 400
+        # Utilisateur avec attributs A et B
+        print("Génération des clés utilisateur...")
+        user_ab = cpabe.keygen(mpk, msk, ['A', 'B'])
+        print(type(user_ab))
+        # Utilisateur avec attributs A et C
+        user_ac = cpabe.keygen(mpk, msk, ['A', 'C'])
         
-        # Génération de la clé
-        user_key = global_cpabe.keygen2(global_mpk, global_msk, attributes)
+        # Utilisateur avec seulement A (ne pourra pas déchiffrer)
+        user_a = cpabe.keygen(mpk, msk, ['A'])
         
-        # Conversion en format serialisable
-        result = {
-            'status': 'success',
-            'user_key': json.dumps(user_key, cls=CustomJSONEncoder)
-        }
-        
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/encrypt', methods=['POST'])
-def api_encrypt():
-    """Chiffre un message avec une politique d'accès"""
-    global global_cpabe, global_mpk, global_msk
-    
-    if not all([global_cpabe, global_mpk, global_msk]):
-        return jsonify({'status': 'error', 'message': 'Système ABE non initialisé'}), 400
-    
-    try:
-        params = request.json
-        plaintext = params.get('plaintext', '')
-        table = params.get('table', '')
-        column = params.get('column', '')
-        service = params.get('service', None)
-        
-        if not all([plaintext, table, column]):
-            return jsonify({'status': 'error', 'message': 'Paramètres requis: plaintext, table, column'}), 400
-        
-        # Détermination de la politique
-        policy_list = []
-        
-        # Cas dynamiques
-        if (table, column) in [('patient', 'dossier_medical')]:
-            if not service:
-                return jsonify({'status': 'error', 'message': 'Service requis pour ce champ'}), 400
-            policy_list = [['MEDECIN', service.upper()]]
-            
-        elif (table, column) in [
-            ('prelevement', 'temperature'),
-            ('prelevement', 'observation'),
-            ('prelevement', 'tension_art'),
-            ('prelevement', 'pulsation'),
-            ('prelevement', 'tension_resp')
-        ]:
-            if not service:
-                return jsonify({'status': 'error', 'message': 'Service requis pour ce champ'}), 400
-            policy_list = [['MEDECIN', service.upper()], ['INFIRMIER', service.upper()]]
-            
-        elif (table, column) in [
-            ('analyse_medicale', 'examen'),
-            ('analyse_medicale', 'valeur_details')
-        ]:
-            if not service:
-                return jsonify({'status': 'error', 'message': 'Service requis pour ce champ'}), 400
-            policy_list = [['MEDECIN', service.upper()], ['LABORANTIN']]
-            
-        # Cas statiques
-        else:
-            policy_list = STATIC_POLICIES.get((table.lower(), column.lower()), [])
-            if not policy_list:
-                return jsonify({'status': 'error', 'message': f'Aucune politique définie pour {table}.{column}'}), 400
-        
-        # Conversion en PolicyNode
-        policy = list_to_policy(policy_list)
+        # Message secret
+        secret = b"Message ultra secret!"
         
         # Chiffrement
-        encrypted_data = global_cpabe.encrypt(global_mpk, plaintext.encode('utf-8'), policy)
+        print("Chiffrement du message...")
+        ct = cpabe.encrypt(mpk, secret, policy)
+        print(ct)
         
-        # Préparation des résultats
-        result = {
-            'status': 'success',
-            'encrypted_data': json.dumps(encrypted_data, cls=CustomJSONEncoder),
-            'policy_list': policy_list
-        }
+        # Déchiffrement par user_ab (devrait réussir)
+        print("Tentative de déchiffrement avec A et B...")
+        decrypted_ab = cpabe.decrypt(mpk, user_ab, ct)
+        print(f"Succès: {decrypted_ab.decode()}")
         
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/decrypt', methods=['POST'])
-def api_decrypt():
-    """Déchiffre un message avec la clé utilisateur"""
-    global global_cpabe, global_mpk, global_msk
-    
-    if not all([global_cpabe, global_mpk, global_msk]):
-        return jsonify({'status': 'error', 'message': 'Système ABE non initialisé'}), 400
-    
-    try:
-        params = request.json
-        user_key_json = params.get('user_key', '')
-        encrypted_data_json = params.get('encrypted_data', '')
+        # Déchiffrement par user_ac (devrait réussir)
+        print("Tentative de déchiffrement avec A et C...")
+        decrypted_ac = cpabe.decrypt(mpk, user_ac, ct)
+        print(f"Succès: {decrypted_ac.decode()}")
         
-        if not all([user_key_json, encrypted_data_json]):
-            return jsonify({'status': 'error', 'message': 'Paramètres requis: user_key, encrypted_data'}), 400
-        
-        # Décodage des structures JSON
-        user_key_data = json.loads(user_key_json)
-        user_key = UserKey(
-            K=user_key_data['K'],
-            L=user_key_data['L'],
-            attrs=user_key_data['attrs']
-        )
-        
-        encrypted_data = json.loads(encrypted_data_json)
-        encrypted_data = decode_json(encrypted_data)
-        
-        # Déchiffrement
+        # Déchiffrement par user_a (devrait échouer)
+        print("Tentative de déchiffrement avec seulement A...")
         try:
-            plaintext = global_cpabe.decrypt(global_mpk, user_key, encrypted_data).decode('utf-8')
-            return jsonify({
-                'status': 'success',
-                'plaintext': plaintext
-            })
+            decrypted_a = cpabe.decrypt(mpk, user_a, ct)
+            print("ERREUR: Le déchiffrement a réussi alors qu'il aurait dû échouer")
         except ValueError as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 403  # 403 Forbidden si les attributs ne satisfont pas la politique
+            print(f"Échec attendu: {e}")
         
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/policy', methods=['POST'])
-def api_create_policy():
-    """Crée une politique ABE pour un type d'utilisateur"""
-    try:
-        params = request.json
-        table_name = params.get('table_name', '')
-        service = params.get('service', None)
-        
-        if not table_name:
-            return jsonify({'status': 'error', 'message': 'Paramètre table_name requis'}), 400
-        
-        # Création de la politique
-        try:
-            policy = create_abe_policy(table_name, service)
-            return jsonify({
-                'status': 'success',
-                'policy': policy
-            })
-        except ValueError as e:
-            return jsonify({'status': 'error', 'message': str(e)}), 400
-        
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/save_master_keys', methods=['POST'])
-def api_save_master_keys():
-    """Sauvegarde les clés maîtresses dans un fichier"""
-    global global_cpabe, global_mpk, global_msk
-    
-    if not all([global_cpabe, global_mpk, global_msk]):
-        return jsonify({'status': 'error', 'message': 'Système ABE non initialisé'}), 400
-    
-    try:
-        # Sérialisation des objets avec pickle (plus sûr que JSON pour ces structures)
-        with open('master_keys.pkl', 'wb') as f:
-            pickle.dump({
-                'cpabe': global_cpabe,
-                'mpk': global_mpk,
-                'msk': global_msk
-            }, f)
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Clés maîtresses sauvegardées avec succès'
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/load_master_keys', methods=['POST'])
-def api_load_master_keys():
-    """Charge les clés maîtresses depuis un fichier"""
-    global global_cpabe, global_mpk, global_msk
-    
-    try:
-        # Désérialisation des objets
-        with open('master_keys.pkl', 'rb') as f:
-            keys = pickle.load(f)
-            global_cpabe = keys['cpabe']
-            global_mpk = keys['mpk']
-            global_msk = keys['msk']
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Clés maîtresses chargées avec succès'
-        })
-    except FileNotFoundError:
-        return jsonify({'status': 'error', 'message': 'Fichier de clés non trouvé'}), 404
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        print(f"Erreur: {e}")

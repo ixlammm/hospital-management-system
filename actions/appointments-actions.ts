@@ -138,7 +138,7 @@ export async function addAppointment(appointment: Appointment) {
 }
 
 export async function updateAppointment(id: string, appointment: Partial<Appointment & { id: string }>) {
-  await requireAuth((session) => session.user.role == "admin" || session.user.role == "reception")
+  await requireAuth((session) => session.user.role == "admin" || session.user.role == "reception" || session.user.role == "medecin")
   const {
     id: _,
     notes,

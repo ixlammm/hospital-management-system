@@ -36,6 +36,7 @@ model Patient {
   invoices   Invoice[]
   ibe_a     String?
   ibe_r     String?
+  abe_user_key String?
   user           User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -51,9 +52,10 @@ model Staff {
   gender         Gender?
   address        String?
   notes          String?
+  department     String?
   user           User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  a_hex          String?
-  r_encrypted    String?
+  abe_user_key String?
+
   appointments   Appointment[]
   prescriptions  Prescription[]
   radio          Radio[]
@@ -110,11 +112,12 @@ model Sample {
   id              String  @id @default(uuid())
   date            DateTime
   observation     String
-  temperature     Float
+  temperature     String
   bloodPressure   String
-  heartRate       Int
+  heartRate       String
   patientId       String
   doctorId        String
+  abe_user_key String?
   patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }
@@ -164,6 +167,7 @@ model Invoice {
   date            DateTime
   amount          Float
   status          String
+  abe_user_key String?
   patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   staff           Staff   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }

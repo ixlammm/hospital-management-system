@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Sample" ALTER COLUMN "temperature" SET DATA TYPE TEXT,
+ALTER COLUMN "heartRate" SET DATA TYPE TEXT;

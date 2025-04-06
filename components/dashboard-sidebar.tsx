@@ -51,7 +51,7 @@ export function DashboardSidebar({ navigationItems, activeTab }: DashboardSideba
       const groupedItems = {
         DASHBOARD:
           role === "admin" ? ["overview", "patients", "staff", "appointments", "prescriptions", "samples", "radio", "analysis", "research", "invoice", "settings"] :
-            role == "medecin" ? ["overview", "patients", "appointments", "prescriptions", "research", "radio", "settings"] :
+            role == "medecin" ? ["overview", "patients", "appointments", "samples", "prescriptions", "research", "radio", "settings"] :
               role == "reception" ? ["overview", "patients", "appointments", "settings"] :
                 role == "infirmier" ? ["overview", "patients", "appointments", "samples", "settings"] :
                   role == "radiologue" ? ["overview", "patients", "appointments", "radio", "settings"] :

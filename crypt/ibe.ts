@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000'; // Modifie selon ton serveur
+const API_BASE = process.env.IBE_BASE // Modifie selon ton serveur
 
 export interface CleResponse {
     identite: string;

@@ -30,7 +30,7 @@ export function InvoiceTab() {
         doctorId: "",
         patientId: "",
         amount: 0,
-        status: "paid"
+        status: "paid",
     }
     const invoice = useNamedState(initialState)
     const dialog = useAddDialog()

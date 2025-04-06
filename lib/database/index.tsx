@@ -35,7 +35,7 @@ function getDatabase() {
     try {
       const r = await addPatient({ patient, password })
       if (r)
-        patients.setData((prev) => [r, ...prev])
+        patients.setData((prev) => [r, ...prev as any])
     }
     catch (e) {
       console.error(e)
@@ -57,7 +57,7 @@ function getDatabase() {
     try {
       const r = await addStaff({ staff: s, password })
       if (r)
-        staff.setData((prev) => [r, ...prev])
+        staff.setData((prev) => [r, ...prev as any])
     }
     catch (e) {
       console.error(e)
@@ -78,7 +78,7 @@ function getDatabase() {
     try {
       const r = await updateStaff(id, s)
       if (r)
-        staff.setData((prev) => prev.map((s) => (s.id === id ? {
+        staff.setData((prev: any) => prev.map((s: any) => (s.id === id ? {
           ...s, ...r
         } : s)))
     } catch (e) {
@@ -155,7 +155,7 @@ function getDatabase() {
     try {
       const r = await addSample(sample)
       if (r)
-        samples.setData((prev) => [r, ...prev])
+        samples.setData((prev) => [r, ...prev as any])
     } catch (e) {
       console.error(e)
     }

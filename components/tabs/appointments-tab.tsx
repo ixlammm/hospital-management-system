@@ -74,6 +74,7 @@ export function AppointmentsTab() {
     status: ""
   }
 
+
   const app = useNamedState(initialState)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -146,8 +147,9 @@ export function AppointmentsTab() {
           <p className="text-muted-foreground">Manage and schedule patient appointments</p>
         </div>
         {
-          session.status == "authenticated" && (session.data.user.role == "admin" || session.data.user.role == "reception") &&
+          session.status == "authenticated" && (session.data.user.role == "admin" || session.data.user.role == "reception" || session.data.user.role == "medecin") &&
           <>
+          
             <DialogUpdate
               description="Update appointment details"
               dialog={updateDialog}

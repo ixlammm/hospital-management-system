@@ -106,6 +106,7 @@ export function StaffTab() {
       email: newStaff.email,
       joined: new Date(),
       gender: newStaff.gender as Staff["gender"],
+      department: newStaff.department,
       address: newStaff.address,
       notes: newStaff.notes,
       userId: null,
@@ -255,7 +256,7 @@ export function StaffTab() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gender">{t("staff.gender")}</Label>
+                  <Label htmlFor="gender">{t("common.gender")}</Label>
                   <RadioGroup value={newStaff.gender} onValueChange={handleRadioChange} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="female" id="female" />
@@ -290,7 +291,7 @@ export function StaffTab() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password">{t("staff.password")}</Label>
+                    <Label htmlFor="password">{t("common.password")}</Label>
                     <Input
                       id="password"
                       type="password"

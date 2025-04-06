@@ -7,19 +7,34 @@ import { Patient } from "@/lib/database/types"
 import { saltAndHashPassword } from "@/lib/password"
 import { IBE } from "@/crypt/ibe"
 import { authWrapper } from "./auth-wrapper"
+import { ABE } from "@/crypt/abe"
+import { encryptData } from "./encrypt"
 
-export const getPatients = authWrapper(async (session)  =>{
-  console.log("GET PATIENTS")
-  console.log(session)
-  if (session.role == "admin" || session.role == "reception")
-    return await prisma.patient.findMany({
+// TEL, EMAIL, ADDRESS (RECEPTION)
+
+async function decryptPatient(patient: Patient & { id: string, abe_user_key: string }) {
+  return {
+    ...patient,
+    contact: (await ABE.decrypt(patient.contact, patient.abe_user_key!)).decrypted_data,
+    email: (await ABE.decrypt(patient.email!, patient.abe_user_key!)).decrypted_data,
+    address: (await ABE.decrypt(patient.address!, patient.abe_user_key!)).decrypted_data,
+  }
+}
+
+export const getPatients = authWrapper(async (session) => {
+  if (session.role == "admin" || session.role == "reception") {
+    const patients = await prisma.patient.findMany({
       omit: {
         ibe_a: true,
         ibe_r: true,
       }
     })
+    return await Promise.all(patients.map(async (patient) => {
+      return await decryptPatient(patient as any)
+    }))
+  }
   else {
-    return (await prisma.user.findUnique({
+    const patients = (await prisma.user.findUnique({
       where: {
         id: session.id,
       },
@@ -35,10 +50,13 @@ export const getPatients = authWrapper(async (session)  =>{
         }
       },
     }))?.staff?.appointments.map((a) => a.patient) || []
+    return await Promise.all(patients.map(async (patient) => {
+      return await decryptPatient(patient as any)
+    }))
   }
 })
 
-export async function addPatient({ patient, password} : { patient: Patient, password: string }) {
+export async function addPatient({ patient, password }: { patient: Patient, password: string }) {
   await requireAuth()
   return await prisma.$transaction(async tx => {
     const user = await tx.user.create({
@@ -51,17 +69,23 @@ export async function addPatient({ patient, password} : { patient: Patient, pass
     const newPatient = await tx.patient.create({
       data: {
         ...patient,
+        email: await encryptData("PATIENT", "email", patient.email!),
+        contact: await encryptData("PATIENT", "telephone", patient.contact),
+        address: await encryptData("PATIENT", "address", patient.address!),
         userId: user.id,
       },
     })
     const keys = await IBE.genererCles("PATIENT", newPatient.id)
-    return await tx.patient.update({
+    const user_key = await ABE.generateUserKey([ "PATIENT" ])
+    const np = await tx.patient.update({
       where: { id: newPatient.id },
       data: {
         ibe_a: keys.a,
         ibe_r: keys.r,
+        abe_user_key: user_key.user_key,
       },
     })
+    return await decryptPatient(np as any)
   })
 }
 

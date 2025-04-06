@@ -29,8 +29,8 @@ export function SamplesTab() {
         doctorId: "",
         patientId: "",
         bloodPressure: "",
-        heartRate: 0,
-        temperature: 0,
+        heartRate: "0",
+        temperature: "0",
         observation: "",
     }
     const sample = useNamedState(initialState)

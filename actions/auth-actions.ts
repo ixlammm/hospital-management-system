@@ -14,7 +14,7 @@ export async function requireAuth(logic?: (session: Session) => boolean) {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
   })
-  if (!user || (logic && !logic(session)) || !user?.passwordChanged) {
+  if (!user || (logic && !logic(session))) {
     throw new Error("You do not have permission to access this resource.")
   }
   return user
