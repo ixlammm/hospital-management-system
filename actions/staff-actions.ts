@@ -9,15 +9,6 @@ import { authWrapper } from "./auth-wrapper"
 import { ABE } from "@/crypt/abe"
 import { decryptTable, encryptData } from "./encrypt"
 
-// patient: TEL, EMAIL, ADDRESS ['staff', 'reception']
-// medecin: TEL, EMAIL ['staff', 'administration']
-// agent: TEL, EMAIL ['staff', 'administration']
-// infirmier: TEL, EMAIL ['staff', 'administration']
-// laborantin: TEL, EMAIL ['staff', 'administration']
-// radiologue: TEL, EMAIL ['staff', 'administration']
-// comptable: TEL, EMAIL ['staff', 'administration']
-// facture: montant ['comptable', 'administration']
-
 const roles: { [key: string]: any } = {
   "admin": "AGENT",
   "medecin": "AGENT",
@@ -27,20 +18,16 @@ const roles: { [key: string]: any } = {
   "comptable": "AGENT",
 }
 
-// async function decryptStaff(staff: Staff & { id: string, abe_user_key: string }) {
-//   return {
-//     ...staff,
-//     contact: (await ABE.decrypt(staff.contact, staff.abe_user_key!)).decrypted_data,
-//     email: (await ABE.decrypt(staff.email!, staff.abe_user_key!)).decrypted_data,
-//   }
-// }
-
-
 export const getStaff = authWrapper(async (session) => {
+  const user = await prisma.staff.findUnique({
+    where: {
+      userId: session.id
+    }
+  })
   if (session.role == "admin" || session.role == "reception") {
     const staff = await prisma.staff.findMany()
-    return await Promise.all(staff.map(async (s) => {
-      return await decryptTable(s, ["email", "contact"])
+    return await Promise.all(staff.map((s) => {
+      return decryptTable(s, ["email", "contact"], user?.abe_user_key!)
     }))
   }
   else {
@@ -51,7 +38,7 @@ export const getStaff = authWrapper(async (session) => {
     })
     console.log(st)
     if (st) {
-      return [await decryptTable(st, ["email", "contact"])]
+      return await decryptTable(st, ["email", "contact"], user?.abe_user_key!)
     }
     return []
   }
@@ -59,6 +46,11 @@ export const getStaff = authWrapper(async (session) => {
 
 export async function addStaff({ staff, password }: { staff: Staff, password: string }) {
   const session = await requireAuth()
+  const authUser = await prisma.staff.findUnique({
+    where: {
+      userId: session.id
+    },
+  })
   return await prisma.$transaction(async tx => {
     const user = await tx.user.create({
       data: {
@@ -67,7 +59,6 @@ export async function addStaff({ staff, password }: { staff: Staff, password: st
         role: staff.role,
       }
     })
-    console.log(staff)
     const st = await tx.staff.create({
       data: {
         ...staff,
@@ -79,14 +70,17 @@ export async function addStaff({ staff, password }: { staff: Staff, password: st
     let role = session.role.toUpperCase()
     if (role == "ADMIN")
       role = "AGENT"
-    const key = await ABE.generateUserKey([ role as any,  "ADMINISTRATION" ])
+    const key = await ABE.generateUserKey([
+      [role as any, staff.department?.toUpperCase()],
+      ["AGENT", "ADMINISTRATION"],
+    ])
     const newStaff = await tx.staff.update({
       where: { id: st.id },
       data: {
         abe_user_key: key.user_key,
       }
     })
-    return await decryptTable(newStaff, ["email", "contact"])
+    return await decryptTable(newStaff, ["email", "contact"], authUser?.abe_user_key!)
   })
 }
 

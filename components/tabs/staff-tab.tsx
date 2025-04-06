@@ -159,7 +159,7 @@ export function StaffTab() {
   }
 
   // Filter staff based on search term and department filter
-  const filteredStaff = staff.data.filter((member) => {
+  const filteredStaff = staff.data.filter((member: any) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -392,7 +392,7 @@ export function StaffTab() {
                       }
                     </TableRow>
                   ))
-                  : filteredStaff.map((member) => (
+                  : filteredStaff.map((member: any) => (
                     <TableRow key={member.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -401,7 +401,7 @@ export function StaffTab() {
                             <AvatarFallback>
                               {member.name
                                 .split(" ")
-                                .map((n) => n[0])
+                                .map((n: any) => n[0])
                                 .join("")}
                             </AvatarFallback>
                           </Avatar>

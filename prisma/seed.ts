@@ -16,9 +16,9 @@ async function main() {
             userId: admin.id,
             department: "ADMINISTRATION",
             abe_user_key: (await ABE.generateUserKey([ "AGENT", "ADMINISTRATION" ])).user_key,
-            contact: "",
-            email: "",
-            name: "",
+            contact: (await ABE.encrypt("AGENT", "telephone", "00000000", "ADMINISTRATION")).encrypted_data,
+            email: (await ABE.encrypt("AGENT", "email", "admin@hospital.com", "ADMINISTRATION")).encrypted_data,
+            name: "Administrator",
             role: "admin",
             status: "",
             joined: new Date()

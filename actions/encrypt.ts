@@ -46,12 +46,12 @@ export async function encryptData<T extends Policies, G extends keyof typeof sta
     return encrypted.encrypted_data
 }
 
-export async function decryptTable<T extends { id: string, abe_user_key: string | null }, G extends (keyof T) & string>(table: T, fields: G[]) {
+export async function decryptTable<T extends { id: string, abe_user_key: string | null }, G extends (keyof T) & string>(table: T, fields: G[], key: string) {
     const newTable = {
         ...table
     }
     for (const field of fields) {
-        newTable[field] = (await ABE.decrypt(table[field] as string, table.abe_user_key!)).decrypted_data as T[G]
+        newTable[field] = (await ABE.decrypt(table[field] as string, key)).decrypted_data as T[G]
     }
     return newTable
 }

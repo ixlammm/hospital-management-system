@@ -9,6 +9,11 @@ import { decryptTable } from "./encrypt"
 import { ABE } from "@/crypt/abe"
 
 export const getSamples = authWrapper(async (session) => {
+  const user = await prisma.staff.findUnique({
+    where: {
+      userId: session.id
+    }
+  })
   const samples = await prisma.sample.findMany({
     include: {
       patient: {
@@ -23,7 +28,7 @@ export const getSamples = authWrapper(async (session) => {
       },
     }
   })
-  return Promise.all(samples.map(async (sample) => decryptTable(sample, ["temperature", "observation", "heartRate", "bloodPressure"])))
+  return Promise.all(samples.map(async (sample) => decryptTable(sample, ["temperature", "observation", "heartRate", "bloodPressure"], user!.abe_user_key!)))
 })
 
 export async function addSample(sample:Sample) {
@@ -67,7 +72,7 @@ export async function addSample(sample:Sample) {
         abe_user_key: key.user_key
       }
     })
-    return decryptTable(a, ["temperature", "observation", "heartRate", "bloodPressure"])
+    return decryptTable(a, ["temperature", "observation", "heartRate", "bloodPressure"], staff!.abe_user_key!)
   })
 }
 

@@ -20,7 +20,7 @@ const Database = createContext<ReturnType<typeof getDatabase> | null>(null)
 function getDatabase() {
 
   const patients = useAsyncArray(getPatients);
-  const staff = useAsyncArray(getStaff);
+  const staff = useAsyncArray(getStaff as any);
   const appointments = useAsyncArray(getAppointments);
   const prescriptions = useAsyncArray(getPrescriptions);
   const samples = useAsyncArray(getSamples)
@@ -68,7 +68,7 @@ function getDatabase() {
     try {
       const r = await deleteStaff(id)
       if (r)
-        staff.setData((prev) => prev.filter((s) => s.id !== id))
+        staff.setData((prev) => prev.filter((s: any) => s.id !== id))
     } catch (e) {
       console.error(e)
     }
