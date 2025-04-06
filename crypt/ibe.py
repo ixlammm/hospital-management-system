@@ -9,6 +9,16 @@ from base64 import b64encode, b64decode
 from utils import *
 import pickle
 
+from dotenv import load_dotenv
+import os
+import json
+
+load_dotenv()
+
+app = Flask(__name__)
+
+envKey = json.loads(b64decode(os.getenv("IBE_MASTER_KEY")))
+
 # Initialisation unique (au démarrage du serveur)
 global_pkg = CocksPKG()  # Génère p, q, et n
 # Verifier la table cocks_pkg :
@@ -18,6 +28,10 @@ global_pkg = CocksPKG()  # Génère p, q, et n
 #     global_pkg.q = gmpy2.mpz(q)
 #     }
 # Il faut utiliser gmpy2.mpz() pour caster la donnee qui a ete dans la base et la recuperer dans une variable ici
+
+global_pkg.p = gmpy2.mpz(envKey["p"])
+global_pkg.q = gmpy2.mpz(envKey["q"])
+global_pkg.n = gmpy2.mpz(envKey["n"])
 
 global_n = global_pkg.n   # n est désormais global
 

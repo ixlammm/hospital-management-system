@@ -26,7 +26,7 @@ export default function SelectDoctor<T extends { doctorId: string }>(props: {
                 <SelectValue placeholder={t("common.selectDoctor")} />
             </SelectTrigger>
             <SelectContent>
-                {database.staff.data.map((staff) => (
+                {database.staff.data.map((staff: any) => (
                     <SelectItem key={staff.id} value={staff.id}>
                         {staff.name}
                     </SelectItem>

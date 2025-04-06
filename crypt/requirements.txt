@@ -5,3 +5,4 @@ gmpy2==2.2.1
 pip==25.0.1
 pycryptodome==3.22.0
 pycryptodomex==3.22.0
+python-dotenv==1.1.0

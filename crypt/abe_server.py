@@ -3,13 +3,25 @@ import pickle
 import base64
 from abe import CPABE, PolicyNode, MasterKey, UserKey
 from typing import Dict, List
+from dotenv import load_dotenv
+import os
+import json
+
+load_dotenv()
 
 app = Flask(__name__)
 
-# Variables globales pour stocker les clés et paramètres
-cpabe = None
-mpk = None
-msk = None
+envKey = json.loads(base64.b64decode(os.getenv("ABE_MASTER_KEY")))
+
+cpabe_data = pickle.loads(base64.b64decode(envKey['cpabe']))
+mpk = pickle.loads(base64.b64decode(envKey['mpk']))
+msk = pickle.loads(base64.b64decode(envKey['msk']))
+
+# Réinitialisation de CPABE avec les paramètres stockés
+cpabe = CPABE(256)
+cpabe.p = cpabe_data['p']
+cpabe.q = cpabe_data['q']
+cpabe.g = cpabe_data['g']
 
 # 1. API pour la génération initiale des clés et paramètres
 @app.route('/api/init', methods=['GET'])
